@@ -467,6 +467,15 @@ interface MaterialFamily {
     key: string;
     label: string;
     tokens: string[];
+    /**
+     * For *alloys* (e.g. electrum = gold + silver): the base-metal family keys
+     * this alloy is smelted from. On the alloy's item page, the refined forms of
+     * these base metals (ingots, nuggets, metal bits, plates — see
+     * {@link ALLOY_BASE_FORM_CATEGORIES}) are surfaced as related items, WITHOUT
+     * their ore/crushed forms (an alloy isn't mined, so the base ores aren't a
+     * relevant comparison). Leave unset for plain metals/minerals.
+     */
+    baseMetals?: string[];
 }
 
 const MATERIAL_FAMILIES: MaterialFamily[] = [
@@ -479,10 +488,22 @@ const MATERIAL_FAMILIES: MaterialFamily[] = [
     // contain the word "iron", which would otherwise fold them into the iron
     // family). Tokens cover both the item codes (`ingot-meteoriciron`,
     // `meteorite-iron`, `stone-meteorite-iron`) and display names ("Meteoric …").
+    // Alloys are smelted from several base metals; they share no ore and their
+    // items carry the alloy's OWN name in their code (`ingot-tinbronze`,
+    // `ingot-electrum`, …), so each alloy's family only needs its own token.
+    // The base metals it draws from are declared in `baseMetals` and surfaced as
+    // related items (refined forms only) via that mechanism — NOT by listing the
+    // base-metal tokens here, which would wrongly fold plain copper/gold/silver
+    // items into the alloy's family (and break their own family + metal pricing).
+    { key: "tinbronze", label: "Tin bronze", tokens: ["tinbronze"], baseMetals: ["copper", "tin"] },
+    { key: "blackbronze", label: "Black bronze", tokens: ["blackbronze"], baseMetals: ["copper", "gold", "silver"] },
+    { key: "cupronickel", label: "Cupronickel", tokens: ["cupronickel"], baseMetals: ["copper", "nickel"] },
+    { key: "bismuthbronze", label: "Bismuth bronze", tokens: ["bismuthbronze"], baseMetals: ["copper", "zinc", "bismuth"] },
+    { key: "electrum", label: "Electrum", tokens: ["electrum"], baseMetals: ["gold", "silver"] },
+
     { key: "meteoriciron", label: "Meteoric iron", tokens: ["meteoriciron", "meteorite", "meteoric"] },
     { key: "iron", label: "Iron", tokens: ["iron", "ironbloom", "hematite", "magnetite", "limonite"] },
     { key: "copper", label: "Copper", tokens: ["copper", "nativecopper", "malachite", "cuprite", "tetrahedrite"] },
-    { key: "cupronickel", label: "Cupronickel", tokens: ["cupronickel"] },
     { key: "tin", label: "Tin", tokens: ["tin", "cassiterite"] },
     { key: "zinc", label: "Zinc", tokens: ["zinc", "sphalerite"] },
     { key: "lead", label: "Lead", tokens: ["lead", "galena"] },
@@ -546,6 +567,19 @@ const RELATED_FORM_CATEGORIES = new Set([
     "graphite",
 ]);
 
+/** Fast lookup of a {@link MaterialFamily} by its `key`. */
+const MATERIAL_FAMILY_BY_KEY = new Map<string, MaterialFamily>(
+    MATERIAL_FAMILIES.map((f) => [f.key, f]),
+);
+
+/**
+ * The item categories of a base metal that are relevant on an *alloy's* page:
+ * the refined, smelted forms (ingots, nuggets, metal bits, plates). An alloy is
+ * never mined, so a base metal's raw ore/crushed-ore forms aren't a meaningful
+ * comparison and are deliberately excluded (see {@link MaterialFamily.baseMetals}).
+ */
+const ALLOY_BASE_FORM_CATEGORIES = new Set(["nugget", "ingot", "metalbit", "metalplate"]);
+
 /** Split an item code + name into the set of whole lowercase words it contains. */
 function itemWordTokens(entry: { code: string | null; name: string }): Set<string> {
     const words = new Set<string>();
@@ -588,8 +622,10 @@ export function isRelatedFormCategory(category: string): boolean {
 /**
  * Hand-crafted "Related items" links, layered on top of the automatic material
  * families above. Use these for relationships the token families can't express
- * on their own — e.g. an alloy that draws from several base metals, or a link to
- * a couple of *specific* items without pulling in their whole family.
+ * on their own — a link to a couple of *specific* items without pulling in their
+ * whole family, or extra whole families beyond the item's own. (Alloy → base
+ * metal links are handled automatically via {@link MaterialFamily.baseMetals},
+ * so they don't need a manual rule.)
  *
  * A rule matches the item you're viewing by its `code`, then contributes extra
  * related items via any combination of:
@@ -741,10 +777,20 @@ export function computeRelatedItems(
 
     if (!ownFamily && !rule && chiselItems.length === 0) return null;
 
-    // Families to draw related *forms* from: the item's own, plus manual extras.
-    const familyKeys = new Set<string>();
-    if (ownFamily) familyKeys.add(ownFamily.key);
-    for (const k of rule?.families ?? []) familyKeys.add(k);
+    // Families to draw related *forms* from, each mapped to the categories we
+    // accept from it: `null` means "every raw/intermediate form" (the item's own
+    // family and any manual-rule families), while a restricted Set is used for an
+    // alloy's base metals (refined forms only — no ores). See
+    // {@link MaterialFamily.baseMetals} and {@link ALLOY_BASE_FORM_CATEGORIES}.
+    const familyForms = new Map<string, Set<string> | null>();
+    if (ownFamily) familyForms.set(ownFamily.key, null);
+    for (const k of rule?.families ?? []) familyForms.set(k, null);
+    // Alloys (electrum, tin bronze, …): fold in the refined forms of each base
+    // metal they're smelted from, but not those metals' ores.
+    const ownFamilyDef = ownFamily ? MATERIAL_FAMILY_BY_KEY.get(ownFamily.key) : undefined;
+    for (const baseKey of ownFamilyDef?.baseMetals ?? []) {
+        if (!familyForms.has(baseKey)) familyForms.set(baseKey, ALLOY_BASE_FORM_CATEGORIES);
+    }
     // Specific item codes a manual rule links regardless of family/category.
     const itemPatterns = rule?.items ?? [];
 
@@ -755,13 +801,15 @@ export function computeRelatedItems(
         if (selfIds.has(iid)) continue;
         if (filterActive && !activeIds.has(iid)) continue;
 
-        // Include if the entry is a form-member of an included family, OR it's
-        // one of the manually-listed specific item codes.
+        // Include if the entry is a form-member of an included family (within any
+        // per-family category restriction), OR it's a manually-listed item code.
         const byFamily =
             isRelatedFormCategory(e.category) &&
             (() => {
                 const ef = resolveItemFamily(e);
-                return ef != null && familyKeys.has(ef.key);
+                if (ef == null || !familyForms.has(ef.key)) return false;
+                const allowed = familyForms.get(ef.key);
+                return allowed == null || allowed.has(e.category);
             })();
         const byManualItem = e.code != null && itemPatterns.some((p) => codeMatches(e.code!, p));
         if (!byFamily && !byManualItem) continue;
@@ -791,7 +839,9 @@ export function computeRelatedItems(
     const label =
         rule?.label ??
         (ownFamily
-            ? `Other forms of ${ownFamily.label.toLowerCase()}`
+            ? ownFamilyDef?.baseMetals?.length
+                ? `${ownFamily.label} & its base metals`
+                : `Other forms of ${ownFamily.label.toLowerCase()}`
             : chiselLabel ?? `Related to ${current.name}`);
     return { label, items };
 }
@@ -820,7 +870,6 @@ export const METAL_FAMILY_KEYS = new Set<string>([
     "chromium",
     "nickel",
     "platinum",
-    "electrum"
 ]);
 
 /**
