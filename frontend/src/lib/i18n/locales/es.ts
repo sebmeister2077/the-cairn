@@ -1186,6 +1186,8 @@ const es = {
         },
         "mapSourceLabel": "Fuente del mapa",
         "mapSourceConnected": "Conectado",
+        "mapSourceConnecting": "Conectando…",
+        "mapSourceDown": "No disponible",
         "mapSettings": "Ajustes del mapa",
         "changeMapSource": "Cambiar fuente del mapa",
         "readingGlobalServerMap": "Leyendo mapa global del servidor...",

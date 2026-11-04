@@ -180,7 +180,7 @@ import { AdminTraderAreaPanel } from "@/components/tops-map/AdminTraderAreaPanel
 import { AdminTraderAreaOverlay } from "@/components/tops-map/AdminTraderAreaOverlay";
 import { useAdminTraderAreaTool } from "@/hooks/useAdminTraderAreaTool";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
-import { MapSourceStatus } from "@/components/tops-map/MapSourceStatus";
+import { MapSourceStatus, type MapSourceConnection } from "@/components/tops-map/MapSourceStatus";
 import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerMapViewer";
 import { WCOfficialDownDialog } from "@/components/tops-map/WCOfficialDownDialog";
 import { useDrawingViewerProps } from "@/components/tops-map/drawing/useDrawingViewerProps";
@@ -690,6 +690,16 @@ export function TOPSMapViewPage() {
     }
     return null;
   }, [mapSource, wcTranslocatorsQuery, wcLandmarksQuery]);
+  // Live reachability of the active map source for the header status chip.
+  // Prioritise a hard error (e.g. a proxied 502) so we never falsely claim
+  // "Connected"; otherwise show "Connected" only once both overlay fetches
+  // have actually resolved, and "Connecting" during the initial load.
+  const wcConnectionStatus = useMemo<MapSourceConnection>(() => {
+    const queries = [wcTranslocatorsQuery, wcLandmarksQuery];
+    if (queries.some((q) => q.isError)) return "down";
+    if (queries.every((q) => q.isSuccess)) return "connected";
+    return "connecting";
+  }, [wcTranslocatorsQuery, wcLandmarksQuery]);
   useEffect(() => {
     if (wcUpstreamStatus == null) {
       setWcDownOpen(false);
@@ -1995,7 +2005,7 @@ export function TOPSMapViewPage() {
       <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid grid-cols-1 gap-4"}>
         {!isFullscreen && (
           <>
-            <MapSourceStatus />
+            <MapSourceStatus status={wcConnectionStatus} statusCode={wcUpstreamStatus} />
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-muted/30 p-2">
               {loading && !usingWebCartographer && (
                 <Button disabled>

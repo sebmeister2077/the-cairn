@@ -1444,6 +1444,8 @@ export const en = {
         },
         mapSourceLabel: "Map source",
         mapSourceConnected: "Connected",
+        mapSourceConnecting: "Connecting…",
+        mapSourceDown: "Unavailable",
         mapSettings: "Map settings",
         changeMapSource: "Change map source",
         readingGlobalServerMap: "Reading global server map...",

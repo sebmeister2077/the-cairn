@@ -1186,6 +1186,8 @@ const fr = {
         },
         "mapSourceLabel": "Source de la carte",
         "mapSourceConnected": "Connecté",
+        "mapSourceConnecting": "Connexion…",
+        "mapSourceDown": "Indisponible",
         "mapSettings": "Paramètres de la carte",
         "changeMapSource": "Changer la source de la carte",
         "readingGlobalServerMap": "Lecture de la carte mondiale du serveur...",

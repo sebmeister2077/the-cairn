@@ -7,14 +7,31 @@ import { CAIRN_BACKUP_MAP_URL, WEBCARTOGRAPHER_PRESETS } from "@/store/slices/ma
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/helpers/utils";
 
+/** Live reachability of the active map source, derived from the overlay
+ *  geojson fetches on the page. `connecting` covers the initial load,
+ *  `down` means the proxied/direct fetch is failing (e.g. an upstream 502). */
+export type MapSourceConnection = "connected" | "connecting" | "down";
+
 interface MapSourceStatusProps {
   className?: string;
+  /** Real connection health of the active source. Defaults to `connecting`
+   *  so we never falsely claim "Connected" before a fetch has resolved. */
+  status?: MapSourceConnection;
+  /** Optional upstream status code (e.g. 502) shown alongside "Unavailable". */
+  statusCode?: number | null;
 }
 
 /** Compact "Map source: TOPS ● Connected" status with a gear that opens the
  *  full host/preset selector in a popover. Demotes the infrastructure picker
- *  from a prominent top-level control to an on-demand setting. */
-export function MapSourceStatus({ className }: MapSourceStatusProps) {
+ *  from a prominent top-level control to an on-demand setting. The status dot
+ *  reflects the live reachability of the source rather than a hardcoded
+ *  "Connected", so an upstream outage (e.g. a 502 from the WC proxy) is shown
+ *  accurately. */
+export function MapSourceStatus({
+  className,
+  status = "connecting",
+  statusCode,
+}: MapSourceStatusProps) {
   const { t } = useTranslation();
   const mapSource = useReduxState("mapView.mapSource");
   const storedUrl = useReduxState("mapView.webCartographerUrl");
@@ -23,6 +40,31 @@ export function MapSourceStatus({ className }: MapSourceStatusProps) {
     mapSource === "cairn" && CAIRN_BACKUP_MAP_URL
       ? "Cairn"
       : (WEBCARTOGRAPHER_PRESETS.find((p) => p.url === storedUrl)?.label ?? "Custom");
+
+  const statusMeta: Record<
+    MapSourceConnection,
+    { dot: string; text: string; label: string }
+  > = {
+    connected: {
+      dot: "bg-emerald-500",
+      text: "text-emerald-600 dark:text-emerald-400",
+      label: t("topsMap.mapSourceConnected"),
+    },
+    connecting: {
+      dot: "bg-amber-500",
+      text: "text-amber-600 dark:text-amber-400",
+      label: t("topsMap.mapSourceConnecting"),
+    },
+    down: {
+      dot: "bg-red-500",
+      text: "text-red-600 dark:text-red-400",
+      label:
+        statusCode != null
+          ? `${t("topsMap.mapSourceDown")} (HTTP ${statusCode})`
+          : t("topsMap.mapSourceDown"),
+    },
+  };
+  const current = statusMeta[status];
 
   return (
     <div
@@ -33,9 +75,9 @@ export function MapSourceStatus({ className }: MapSourceStatusProps) {
     >
       <span className="text-muted-foreground">{t("topsMap.mapSourceLabel")}:</span>
       <span className="font-medium text-foreground">{friendlyName}</span>
-      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-        <span aria-hidden className="inline-block size-2 rounded-full bg-emerald-500" />
-        {t("topsMap.mapSourceConnected")}
+      <span className={cn("inline-flex items-center gap-1 text-xs", current.text)}>
+        <span aria-hidden className={cn("inline-block size-2 rounded-full", current.dot)} />
+        {current.label}
       </span>
       <Popover>
         <PopoverTrigger
