@@ -21,6 +21,7 @@ from .core.database import (
 )
 from .core import api_key_cache
 from .core import accounts_db
+from .core import process_lifecycle
 from . import migrations as _migrations
 from .core import feature_flags as ff
 from .core.display_names import generate_display_name, FORBIDDEN_SUBSTRINGS
@@ -316,6 +317,20 @@ async def lifespan(app: FastAPI):
                 exc,
             )
 
+    # Crash recorder: reconcile any process that died without a graceful
+    # shutdown (OOM/SIGKILL/native crash) into ``process_lifecycle``, record
+    # this boot, and start the heartbeat. Runs after the schema step so the
+    # table is guaranteed to exist. Best-effort — never blocks startup.
+    step_started = perf_counter()
+    try:
+        process_lifecycle.on_startup()
+        logger.info(
+            "Startup step process_lifecycle.on_startup completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover — startup must not crash
+        logger.warning("process_lifecycle startup failed (non-fatal): %s", exc)
+
     # Make sure env-var ADMIN_API_KEY / API_KEYS exist as rows in api_keys
     # so audit columns (FK to api_keys.id) can be populated for actions
     # taken with those keys. Idempotent.
@@ -609,6 +624,10 @@ async def lifespan(app: FastAPI):
                 logger.info("Flushed pending api_key usage for %d key(s) at shutdown", flushed)
         except Exception as exc:
             logger.warning("api_key_cache.flush_all at shutdown failed (non-fatal): %s", exc)
+        try:
+            process_lifecycle.on_shutdown()
+        except Exception as exc:
+            logger.warning("process_lifecycle.on_shutdown failed (non-fatal): %s", exc)
         close_db()
         logger.info("Shutdown close_db completed in %.3fs", perf_counter() - shutdown_started)
 
