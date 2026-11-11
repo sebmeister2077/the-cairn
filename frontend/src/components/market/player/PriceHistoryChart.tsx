@@ -102,29 +102,11 @@ export function PriceHistoryChart({
   const fairLabel = weighted ? "Weighted" : "Median";
 
   const { chartData, fair, min, max, cap, clampedCount } = useMemo(() => {
-    let count = 0;
     const scale = perUnit ? 1 : stackSize || 1;
     const scaled = points.map((p) => p.ppu * scale);
     const ma = movingAverage(scaled, MOVING_AVERAGE_WINDOW);
     const rows = points.map((p, i) => {
-      let highlightBuy = p.buyerUid != null && highlightedBuyerUids.has(p.buyerUid);
-      const idc = "2nIN";
-      let ys = false;
-      highlightedBuyerUids.forEach((uid) => {
-        if (p.buyerUid?.startsWith(uid)) {
-          ys = true;
-        }
-      });
-      if (highlightBuy && ys) {
-        count++;
-
-        if (count < 30 && count % 2 == 0) {
-          highlightBuy = false;
-        }
-        if (count > 10 && count % 3 === 0) {
-          highlightBuy = false;
-        }
-      }
+      const highlightBuy = p.buyerUid != null && highlightedBuyerUids.has(p.buyerUid);
 
       return {
         t: p.t,
