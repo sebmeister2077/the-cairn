@@ -9,6 +9,9 @@ import {
   drawTLEndpoint,
   drawTerminusMarker,
   drawRapidsMarker,
+  drawPointMarker,
+  DEFAULT_LANDMARK_COLOR,
+  DEFAULT_MISC_COLOR,
 } from "@/lib/tops-map-view/markerStyles";
 import { useTranslation } from "@/lib/i18n";
 import { rgbaFromHex } from "@/lib/color";
@@ -529,6 +532,8 @@ export function MapViewer({
   const tlStyle = useReduxState("mapView.tlStyle");
   const terminusStyle = useReduxState("mapView.terminusStyle");
   const rapidsStyle = useReduxState("mapView.rapidsStyle");
+  const landmarkStyle = useReduxState("mapView.landmarkStyle");
+  const miscStyle = useReduxState("mapView.miscStyle");
   const setIsFullscreen = useCallback(
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
     [dispatch],
@@ -1219,11 +1224,9 @@ export function MapViewer({
     }
 
     if (projectedOverlayPoints.length > 0) {
-      const pointOuter = Math.max(2.1, 3.6 / Math.max(zoom, 0.1));
-      const pointInner = Math.max(1, pointOuter * 0.48);
-
-      // Regular (Base etc.) points — cyan dot with white core.
-      ctx.fillStyle = "rgba(34, 211, 238, 0.92)";
+      // Regular (Base / Misc) points — each kind uses its own user-picked
+      // marker shape + colour. Everything with a dedicated glyph below is
+      // skipped here.
       for (const pt of projectedOverlayPoints) {
         if (
           pt.kind === "Server" ||
@@ -1234,25 +1237,10 @@ export function MapViewer({
           pt.kind === "Rapids"
         )
           continue;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, pointOuter, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
-      for (const pt of projectedOverlayPoints) {
-        if (
-          pt.kind === "Server" ||
-          pt.kind === "Trader" ||
-          pt.kind === "Home" ||
-          pt.kind === "Terminus" ||
-          pt.kind === "BrokenTL" ||
-          pt.kind === "Rapids"
-        )
-          continue;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, pointInner, 0, Math.PI * 2);
-        ctx.fill();
+        const isMisc = pt.kind === "Misc";
+        const style = isMisc ? miscStyle : landmarkStyle;
+        const color = pt.color ?? (isMisc ? DEFAULT_MISC_COLOR : DEFAULT_LANDMARK_COLOR);
+        drawPointMarker(ctx, pt.x, pt.y, zoom, style, color);
       }
 
       // Trader markers — gear-stack icon (rusty gears = VS in-game currency).
@@ -1651,6 +1639,8 @@ export function MapViewer({
     tlStyle,
     terminusStyle,
     rapidsStyle,
+    landmarkStyle,
+    miscStyle,
     pulseTick,
   ]);
 

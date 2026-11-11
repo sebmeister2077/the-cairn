@@ -13,20 +13,28 @@ import {
   setTLStyle,
   setTraderStyle,
   setRapidsStyle,
+  setLandmarkStyle,
+  setMiscStyle,
 } from "@/store/slices/mapView";
 import {
   drawTerminusMarker,
   drawTLEndpoint,
   drawTraderMarker,
   drawRapidsMarker,
+  drawPointMarker,
   type RapidsStyle,
   type TerminusStyle,
   type TLStyle,
   type TraderStyle,
+  type LandmarkStyle,
+  type MiscStyle,
   RAPIDS_STYLE_OPTIONS,
   TERMINUS_STYLE_OPTIONS,
   TL_STYLE_OPTIONS,
   TRADER_STYLE_OPTIONS,
+  POINT_STYLE_OPTIONS,
+  DEFAULT_LANDMARK_COLOR,
+  DEFAULT_MISC_COLOR,
 } from "@/lib/tops-map-view/markerStyles";
 
 // Swatch size in device-independent pixels. The canvas is rendered at
@@ -109,6 +117,8 @@ export function MarkerStylePicker() {
   const tlStyle = useReduxState("mapView.tlStyle");
   const terminusStyle = useReduxState("mapView.terminusStyle");
   const rapidsStyle = useReduxState("mapView.rapidsStyle");
+  const landmarkStyle = useReduxState("mapView.landmarkStyle");
+  const miscStyle = useReduxState("mapView.miscStyle");
 
   const optionText = {
     "gear-stack": {
@@ -293,6 +303,50 @@ export function MarkerStylePicker() {
             />
             {t("account.appearance.rapidsClaimed")}
           </span>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="space-y-0.5">
+          <Label>{t("account.appearance.landmarkIcon")}</Label>
+          <p className="text-xs text-muted-foreground">
+            {t("account.appearance.landmarkIconDescription")}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {POINT_STYLE_OPTIONS.map((opt) => (
+            <OptionButton
+              key={opt.id}
+              label={opt.label}
+              hint={opt.hint}
+              selected={landmarkStyle === opt.id}
+              onSelect={() => dispatch(setLandmarkStyle(opt.id as LandmarkStyle))}
+              draw={(ctx) =>
+                drawPointMarker(ctx, 0, 0, SWATCH_ZOOM, opt.id, DEFAULT_LANDMARK_COLOR)
+              }
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="space-y-0.5">
+          <Label>{t("account.appearance.miscIcon")}</Label>
+          <p className="text-xs text-muted-foreground">
+            {t("account.appearance.miscIconDescription")}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {POINT_STYLE_OPTIONS.map((opt) => (
+            <OptionButton
+              key={opt.id}
+              label={opt.label}
+              hint={opt.hint}
+              selected={miscStyle === opt.id}
+              onSelect={() => dispatch(setMiscStyle(opt.id as MiscStyle))}
+              draw={(ctx) => drawPointMarker(ctx, 0, 0, SWATCH_ZOOM, opt.id, DEFAULT_MISC_COLOR)}
+            />
+          ))}
         </div>
       </div>
     </div>

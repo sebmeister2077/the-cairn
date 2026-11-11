@@ -3,6 +3,9 @@ import {
   drawTLEndpoint,
   drawTerminusMarker,
   drawRapidsMarker,
+  drawPointMarker,
+  DEFAULT_LANDMARK_COLOR,
+  DEFAULT_MISC_COLOR,
 } from "@/lib/tops-map-view/markerStyles";
 import { rgbaFromHex } from "@/lib/color";
 import type { RouteOverlay } from "@/components/tops-map-viewer/MapViewer";
@@ -59,6 +62,9 @@ export interface OverlayDrawArgs {
   traderStyle: string;
   terminusStyle: string;
   rapidsStyle: string;
+  /** User-picked marker shapes for Landmark + Misc point markers. */
+  landmarkStyle: string;
+  miscStyle: string;
   /**
    * Optional cursor-radius cull. When non-null, segments whose `tlId`
    * is not in `alwaysShowTLIds` AND whose endpoints are both farther
@@ -99,6 +105,8 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
     traderStyle,
     terminusStyle,
     rapidsStyle,
+    landmarkStyle,
+    miscStyle,
     radiusCull,
   } = args;
 
@@ -235,10 +243,9 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
 
   // ── Point markers ────────────────────────────────────────────────────────
   if (points.length > 0) {
-    const pointOuter = 3.6;
-    const pointInner = pointOuter * 0.48;
-
-    ctx.fillStyle = "rgba(34, 211, 238, 0.92)";
+    // Base (Landmark) + Misc points — each kind uses its own user-picked
+    // marker shape + colour. Everything with a dedicated glyph below is
+    // skipped here.
     for (const p of points) {
       if (
         p.kind === "Server" ||
@@ -249,24 +256,10 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
         p.kind === "Rapids"
       )
         continue;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, pointOuter, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
-    for (const p of points) {
-      if (
-        p.kind === "Server" ||
-        p.kind === "Trader" ||
-        p.kind === "Home" ||
-        p.kind === "Terminus" ||
-        p.kind === "BrokenTL" ||
-        p.kind === "Rapids"
-      )
-        continue;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, pointInner, 0, Math.PI * 2);
-      ctx.fill();
+      const isMisc = p.kind === "Misc";
+      const style = isMisc ? miscStyle : landmarkStyle;
+      const color = p.color ?? (isMisc ? DEFAULT_MISC_COLOR : DEFAULT_LANDMARK_COLOR);
+      drawPointMarker(ctx, p.x, p.y, 1, style as never, color);
     }
 
     for (const p of points) {

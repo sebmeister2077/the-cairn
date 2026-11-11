@@ -8,6 +8,10 @@ import {
     DEFAULT_TERMINUS_STYLE,
     DEFAULT_TL_STYLE,
     DEFAULT_TRADER_STYLE,
+    DEFAULT_LANDMARK_STYLE,
+    DEFAULT_MISC_STYLE,
+    type LandmarkStyle,
+    type MiscStyle,
     type RapidsStyle,
     type TerminusStyle,
     type TLStyle,
@@ -344,6 +348,9 @@ export interface MapViewState {
     terminusStyle: TerminusStyle;
     /** User-picked icon style for rapids source markers. */
     rapidsStyle: RapidsStyle;
+    /** User-picked marker shapes for Landmark + Misc point markers. */
+    landmarkStyle: LandmarkStyle;
+    miscStyle: MiscStyle;
     /**
      * User overrides for the per-trader-type marker colors. Sparse — only
      * types the user explicitly recoloured appear here; everything else
@@ -439,6 +446,8 @@ export function loadInitialMapViewState(): MapViewState {
         tlStyle: DEFAULT_TL_STYLE,
         terminusStyle: DEFAULT_TERMINUS_STYLE,
         rapidsStyle: DEFAULT_RAPIDS_STYLE,
+        landmarkStyle: DEFAULT_LANDMARK_STYLE,
+        miscStyle: DEFAULT_MISC_STYLE,
         traderColors: {},
         mapSource: readMapSource(),
         webCartographerUrl: readWebCartographerUrl(),
@@ -707,6 +716,12 @@ export const mapViewSlice = createSlice({
         setRapidsStyle(state, action: PayloadAction<RapidsStyle>) {
             state.rapidsStyle = action.payload;
         },
+        setLandmarkStyle(state, action: PayloadAction<LandmarkStyle>) {
+            state.landmarkStyle = action.payload;
+        },
+        setMiscStyle(state, action: PayloadAction<MiscStyle>) {
+            state.miscStyle = action.payload;
+        },
         /**
          * Set or clear one trader type's custom color. A `null`/invalid color
          * removes the override so the type reverts to its palette default.
@@ -813,6 +828,8 @@ export const {
     setTLStyle,
     setTerminusStyle,
     setRapidsStyle,
+    setLandmarkStyle,
+    setMiscStyle,
     setTraderColor,
     resetTraderColors,
     setMapSource,

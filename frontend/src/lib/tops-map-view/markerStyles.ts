@@ -46,11 +46,32 @@ export type RapidsStyle =
     | "swirl"
     | "chevrons";
 
+/**
+ * Shared shape palette for the plain point markers (Landmarks + Misc
+ * waypoints). Both kinds pick from the same shapes but keep independent
+ * selections + default colours so they're visually distinct.
+ */
+export type PointMarkerStyle =
+    | "dot"
+    | "ring"
+    | "diamond"
+    | "square"
+    | "triangle"
+    | "star";
+export type LandmarkStyle = PointMarkerStyle;
+export type MiscStyle = PointMarkerStyle;
+
 /** Default selections used for new users (and as fallbacks). */
 export const DEFAULT_TRADER_STYLE: TraderStyle = "gear-stack";
 export const DEFAULT_TL_STYLE: TLStyle = "spiral";
 export const DEFAULT_TERMINUS_STYLE: TerminusStyle = "tombstone";
 export const DEFAULT_RAPIDS_STYLE: RapidsStyle = "droplet";
+export const DEFAULT_LANDMARK_STYLE: LandmarkStyle = "diamond";
+export const DEFAULT_MISC_STYLE: MiscStyle = "diamond";
+
+/** Default marker fill colours (kept distinct so the two layers read apart). */
+export const DEFAULT_LANDMARK_COLOR = "rgba(34, 211, 238, 0.92)"; // cyan (legacy)
+export const DEFAULT_MISC_COLOR = "rgba(251, 191, 36, 0.95)"; // amber
 
 /** Option lists for the Account-tab picker UI. */
 export const TRADER_STYLE_OPTIONS: ReadonlyArray<{
@@ -104,6 +125,22 @@ export const RAPIDS_STYLE_OPTIONS: ReadonlyArray<{
         { id: "chevrons", label: "Chevrons", hint: "Downstream flow chevrons." },
     ];
 
+/** Shape options shared by the Landmark + Misc point-marker pickers. */
+export const POINT_STYLE_OPTIONS: ReadonlyArray<{
+    id: PointMarkerStyle;
+    label: string;
+    hint: string;
+}> = [
+        { id: "dot", label: "Dot", hint: "Colored disc with a light core (default)." },
+        { id: "ring", label: "Ring", hint: "Hollow ring." },
+        { id: "diamond", label: "Diamond", hint: "Rotated square." },
+        { id: "square", label: "Square", hint: "Filled square." },
+        { id: "triangle", label: "Triangle", hint: "Upward triangle." },
+        { id: "star", label: "Star", hint: "Five-point star." },
+    ];
+export const LANDMARK_STYLE_OPTIONS = POINT_STYLE_OPTIONS;
+export const MISC_STYLE_OPTIONS = POINT_STYLE_OPTIONS;
+
 /** Narrowing helpers for persisted/untrusted input. */
 export function isTraderStyle(v: unknown): v is TraderStyle {
     return TRADER_STYLE_OPTIONS.some((o) => o.id === v);
@@ -117,6 +154,11 @@ export function isTerminusStyle(v: unknown): v is TerminusStyle {
 export function isRapidsStyle(v: unknown): v is RapidsStyle {
     return RAPIDS_STYLE_OPTIONS.some((o) => o.id === v);
 }
+export function isPointMarkerStyle(v: unknown): v is PointMarkerStyle {
+    return POINT_STYLE_OPTIONS.some((o) => o.id === v);
+}
+export const isLandmarkStyle = isPointMarkerStyle;
+export const isMiscStyle = isPointMarkerStyle;
 
 // ---------------------------------------------------------------------------
 // Canvas draw helpers
@@ -148,6 +190,115 @@ function terminusSize(zoom: number) {
     const outer = Math.max(3.0, 5.0 / Math.max(zoom, 0.1));
     const stroke = Math.max(0.4, 0.8 / Math.max(zoom, 0.1));
     return { outer, stroke };
+}
+
+function pointSize(zoom: number) {
+    const outer = Math.max(2.1, 3.6 / Math.max(zoom, 0.1));
+    return {
+        outer,
+        inner: Math.max(1, outer * 0.48),
+        stroke: Math.max(0.4, 0.7 / Math.max(zoom, 0.1)),
+    };
+}
+
+// ---- Point markers (Landmarks / Misc) ----------------------------------
+
+/**
+ * Draw a plain point marker (used for Landmark + Misc waypoints) in the
+ * chosen shape + colour. The "dot" variant preserves the legacy cyan-disc
+ * look (colored disc with a light core); the rest are outlined glyphs.
+ */
+export function drawPointMarker(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    zoom: number,
+    style: PointMarkerStyle,
+    color: string,
+) {
+    const { outer, inner, stroke } = pointSize(zoom);
+    ctx.lineJoin = "round";
+    switch (style) {
+        case "dot": {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, outer, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
+            ctx.beginPath();
+            ctx.arc(x, y, inner, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+        }
+        case "ring": {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = Math.max(0.8, outer * 0.5);
+            ctx.beginPath();
+            ctx.arc(x, y, outer, 0, Math.PI * 2);
+            ctx.stroke();
+            break;
+        }
+        case "diamond": {
+            const r = outer * 1.2;
+            ctx.beginPath();
+            ctx.moveTo(x, y - r);
+            ctx.lineTo(x + r, y);
+            ctx.lineTo(x, y + r);
+            ctx.lineTo(x - r, y);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = OUTLINE;
+            ctx.lineWidth = stroke;
+            ctx.stroke();
+            break;
+        }
+        case "square": {
+            const r = outer;
+            ctx.beginPath();
+            ctx.rect(x - r, y - r, r * 2, r * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = OUTLINE;
+            ctx.lineWidth = stroke;
+            ctx.stroke();
+            break;
+        }
+        case "triangle": {
+            const r = outer * 1.3;
+            ctx.beginPath();
+            ctx.moveTo(x, y - r);
+            ctx.lineTo(x + r * 0.9, y + r * 0.72);
+            ctx.lineTo(x - r * 0.9, y + r * 0.72);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = OUTLINE;
+            ctx.lineWidth = stroke;
+            ctx.stroke();
+            break;
+        }
+        case "star": {
+            const outerR = outer * 1.5;
+            const innerR = outerR * 0.45;
+            ctx.beginPath();
+            for (let i = 0; i < 10; i++) {
+                const rr = i % 2 === 0 ? outerR : innerR;
+                const a = -Math.PI / 2 + (i * Math.PI) / 5;
+                const px = x + Math.cos(a) * rr;
+                const py = y + Math.sin(a) * rr;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = OUTLINE;
+            ctx.lineWidth = stroke;
+            ctx.stroke();
+            break;
+        }
+    }
 }
 
 // ---- Trader -------------------------------------------------------------

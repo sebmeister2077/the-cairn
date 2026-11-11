@@ -385,6 +385,8 @@ export function WebCartographerMapViewer({
   const tlStyle = useReduxState("mapView.tlStyle");
   const terminusStyle = useReduxState("mapView.terminusStyle");
   const rapidsStyle = useReduxState("mapView.rapidsStyle");
+  const landmarkStyle = useReduxState("mapView.landmarkStyle");
+  const miscStyle = useReduxState("mapView.miscStyle");
   const traderColors = useTraderColors();
   const setIsFullscreen = useCallback(
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
@@ -1523,6 +1525,8 @@ export function WebCartographerMapViewer({
       traderStyle,
       terminusStyle,
       rapidsStyle,
+      landmarkStyle,
+      miscStyle,
       radiusCull,
     });
 
@@ -1801,6 +1805,8 @@ export function WebCartographerMapViewer({
     traderStyle,
     terminusStyle,
     rapidsStyle,
+    landmarkStyle,
+    miscStyle,
     traderColors,
     claimMarkers,
     claimTypes,

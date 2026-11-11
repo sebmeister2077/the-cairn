@@ -259,6 +259,12 @@ export const en = {
                 "Fast-water source blocks. Colour marks whether the rapid sits inside a land claim.",
             rapidsUnclaimed: "Unclaimed",
             rapidsClaimed: "Claimed (haloed)",
+            landmarkIcon: "Landmark icon",
+            landmarkIconDescription:
+                "Player bases and points of interest on the map.",
+            miscIcon: "Misc waypoint icon",
+            miscIconDescription:
+                "Miscellaneous waypoints (WebCartographer source only, hidden by default).",
             markerOption: {
                 "gear-stack": { label: "Gear Stack", hint: "Two overlapping rusty gears (default)." },
                 "rusty-gear": { label: "Rusty Gear", hint: "Single gear with rust-tinted hub." },
