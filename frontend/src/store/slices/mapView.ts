@@ -147,6 +147,12 @@ export interface MapViewState {
      */
     showServerLandmarks: boolean;
     /**
+     * Independent toggle for "Misc" waypoints. These only come from the
+     * WebCartographer source and are hidden by default (hence a dedicated
+     * toggle + separate search). Persisted via the root envelope.
+     */
+    showMisc: boolean;
+    /**
      * Independent toggle for Terminus (one-way death-return teleporter)
      * markers. Decoupled from `showLandmarks` so users can surface
      * Terminus points without the rest of the landmark overlay (and vice
@@ -388,6 +394,7 @@ export function loadInitialMapViewState(): MapViewState {
         activeGroupingIds: readActive(),
         showLandmarks: true,
         showServerLandmarks: true,
+        showMisc: false,
         showTerminus: false,
         showTranslocators: false,
         showElkConnections: false,
@@ -464,6 +471,9 @@ export const mapViewSlice = createSlice({
         },
         setShowServerLandmarks(state, action: PayloadAction<boolean>) {
             state.showServerLandmarks = action.payload;
+        },
+        setShowMisc(state, action: PayloadAction<boolean>) {
+            state.showMisc = action.payload;
         },
         setShowTerminus(state, action: PayloadAction<boolean>) {
             state.showTerminus = action.payload;
@@ -756,6 +766,7 @@ export const {
     toggleActiveGrouping,
     setShowLandmarks,
     setShowServerLandmarks,
+    setShowMisc,
     setShowTerminus,
     setShowTranslocators,
     setShowElkConnections,

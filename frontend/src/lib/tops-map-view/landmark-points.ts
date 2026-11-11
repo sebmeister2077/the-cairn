@@ -16,6 +16,10 @@ export interface BuildLandmarkPointsArgs {
     showLandmarks: boolean;
     showServerLandmarks: boolean;
     showTerminus: boolean;
+    /** Whether the WebCartographer-only "Misc" waypoints are visible. */
+    showMisc: boolean;
+    /** "Misc"-kind waypoints (WebCartographer source only). */
+    miscLandmarks: WorldPointMarker[] | undefined;
     showTraders: boolean;
     allTraders: TraderMarker[] | undefined;
     traderColors: Record<TraderType, string>;
@@ -41,6 +45,8 @@ export function buildLandmarkPoints({
     showLandmarks,
     showServerLandmarks,
     showTerminus,
+    showMisc,
+    miscLandmarks,
     showTraders,
     allTraders,
     traderColors,
@@ -69,6 +75,11 @@ export function buildLandmarkPoints({
             }
             if (showLandmarks) base.push(p);
         }
+    }
+    // Misc waypoints are a separate, opt-in layer (WC source only) with their
+    // own toggle, so they render regardless of the main Landmarks toggle.
+    if (showMisc && miscLandmarks) {
+        for (const p of miscLandmarks) base.push(p);
     }
     // Traders overlay. A single toggle (`showTraders`) shows traders from
     // BOTH sources — the official contributed set and the recorded (session

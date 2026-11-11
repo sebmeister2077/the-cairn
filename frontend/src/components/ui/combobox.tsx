@@ -9,6 +9,12 @@ interface ComboboxProps {
   /** Called when the input receives focus. */
   onFocus?: () => void;
   suggestions: string[];
+  /**
+   * Optional per-suggestion badge text (keyed by the exact suggestion
+   * string), rendered muted and right-aligned. Used to tag suggestions
+   * that come from a secondary source (e.g. "Misc") in a unified list.
+   */
+  badges?: Record<string, string>;
   placeholder?: string;
   id?: string;
   className?: string;
@@ -27,6 +33,7 @@ function Combobox({
   onSelect,
   onFocus,
   suggestions,
+  badges,
   placeholder,
   id,
   className,
@@ -141,7 +148,7 @@ function Combobox({
               aria-selected={i === activeIndex}
               data-active={i === activeIndex ? "" : undefined}
               className={cn(
-                "cursor-pointer select-none rounded-md px-2 py-1 text-sm",
+                "flex items-center gap-2 cursor-pointer select-none rounded-md px-2 py-1 text-sm",
                 i === activeIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
               )}
               onMouseDown={(e) => {
@@ -151,7 +158,12 @@ function Combobox({
                 setOpen(false);
               }}
             >
-              {item}
+              <span className="min-w-0 flex-1 truncate">{item}</span>
+              {badges?.[item] && (
+                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {badges[item]}
+                </span>
+              )}
             </li>
           ))}
         </ul>

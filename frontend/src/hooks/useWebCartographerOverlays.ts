@@ -128,7 +128,12 @@ export function useWebCartographerLandmarks(
             const previous = queryClient.getQueryData<
                 WebCartographerOverlayPayload<WorldPointMarker[]>
             >(queryKey);
-            const next = await fetchGeoJson(normalised, "landmarks", parseLandmarks, direct);
+            const next = await fetchGeoJson(
+                normalised,
+                "landmarks",
+                (json) => parseLandmarks(json, { includeMisc: true }),
+                direct,
+            );
             if (!next.lastModified && previous?.lastModified) {
                 return { ...next, lastModified: previous.lastModified };
             }

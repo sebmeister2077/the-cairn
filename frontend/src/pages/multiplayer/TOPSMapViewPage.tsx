@@ -29,6 +29,7 @@ import {
   toggleActiveGrouping as toggleActiveGroupingAction,
   setShowLandmarks as setShowLandmarksAction,
   setShowServerLandmarks as setShowServerLandmarksAction,
+  setShowMisc as setShowMiscAction,
   setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
   setShowElkConnections as setShowElkConnectionsAction,
@@ -338,6 +339,11 @@ export function TOPSMapViewPage() {
   const showServerLandmarks = useAppSelector((s) => s.mapView.showServerLandmarks);
   const setShowServerLandmarks = useCallback(
     (next: boolean) => dispatch(setShowServerLandmarksAction(next)),
+    [dispatch],
+  );
+  const showMisc = useAppSelector((s) => s.mapView.showMisc);
+  const setShowMisc = useCallback(
+    (next: boolean) => dispatch(setShowMiscAction(next)),
     [dispatch],
   );
   const showTerminus = useAppSelector((s) => s.mapView.showTerminus);
@@ -782,6 +788,17 @@ export function TOPSMapViewPage() {
       ).length,
     [allLandmarks],
   );
+  // "Misc" waypoints are hidden by default and come only from the
+  // WebCartographer export; they're kept out of `allLandmarks` (see
+  // `mergeLandmarks`) and surfaced through a dedicated toggle + search.
+  const miscLandmarks = useMemo<WorldPointMarker[]>(
+    () =>
+      usingWebCartographer
+        ? (wcLandmarksQuery.data?.data ?? []).filter((p) => p.kind === "Misc")
+        : [],
+    [usingWebCartographer, wcLandmarksQuery.data],
+  );
+  const miscCount = miscLandmarks.length;
   const translocatorCount = allTranslocators?.length ?? 0;
   // Claims assigned a (non-empty) trader type in trader_claim_types.json are
   // surfaced as trader markers too, so fold their count into the trader total.
@@ -1309,6 +1326,8 @@ export function TOPSMapViewPage() {
         showLandmarks,
         showServerLandmarks,
         showTerminus,
+        showMisc,
+        miscLandmarks,
         showTraders,
         allTraders,
         traderColors,
@@ -1328,6 +1347,8 @@ export function TOPSMapViewPage() {
       showLandmarks,
       showServerLandmarks,
       showTerminus,
+      showMisc,
+      miscLandmarks,
       showTraders,
       allTraders,
       traderColors,
@@ -1350,6 +1371,25 @@ export function TOPSMapViewPage() {
   }
 
   const landmarkSuggestions = useMemo(() => buildLandmarkSuggestions(allLandmarks), [allLandmarks]);
+  const miscSuggestions = useMemo(() => buildLandmarkSuggestions(miscLandmarks), [miscLandmarks]);
+  // Unified search: landmarks + Misc in a single list. Misc-only entries are
+  // appended (deduped against landmark labels) and tagged with a "Misc" badge
+  // so one search field covers both without a second input.
+  const searchSuggestions = useMemo(() => {
+    if (miscSuggestions.length === 0) return landmarkSuggestions;
+    const seen = new Set(landmarkSuggestions.map((s) => s.toLowerCase()));
+    const miscOnly = miscSuggestions.filter((s) => !seen.has(s.toLowerCase()));
+    return [...landmarkSuggestions, ...miscOnly];
+  }, [landmarkSuggestions, miscSuggestions]);
+  const searchBadges = useMemo(() => {
+    if (miscSuggestions.length === 0) return undefined;
+    const seen = new Set(landmarkSuggestions.map((s) => s.toLowerCase()));
+    const map: Record<string, string> = {};
+    for (const s of miscSuggestions) {
+      if (!seen.has(s.toLowerCase())) map[s] = t("topsMap.miscTag");
+    }
+    return map;
+  }, [landmarkSuggestions, miscSuggestions, t]);
 
   function handleLandmarkSelect(name: string) {
     setLandmarkSearch(name);
@@ -1358,6 +1398,15 @@ export function TOPSMapViewPage() {
       setLandmarkFocusSpanBlocks(undefined);
       setLandmarkFocusPoint({ x: match.x, z: match.z });
       setShowLandmarks(true);
+      return;
+    }
+    // Fall back to the Misc set and reveal that layer when the picked name is
+    // a Misc waypoint (Misc is hidden by default).
+    const miscMatch = findLandmarkByLabel(miscLandmarks, name);
+    if (miscMatch) {
+      setLandmarkFocusSpanBlocks(undefined);
+      setLandmarkFocusPoint({ x: miscMatch.x, z: miscMatch.z });
+      setShowMisc(true);
     }
   }
 
@@ -2186,6 +2235,9 @@ export function TOPSMapViewPage() {
               showLandmarks={showLandmarks}
               setShowLandmarks={setShowLandmarks}
               landmarkCount={landmarkCount}
+              showMisc={showMisc}
+              setShowMisc={setShowMisc}
+              miscCount={miscCount}
               showTerminus={showTerminus}
               setShowTerminus={setShowTerminus}
               terminusCount={terminusCount}
@@ -2254,7 +2306,8 @@ export function TOPSMapViewPage() {
                   id="landmark-search"
                   placeholder={t("topsMap.typeToSearch")}
                   value={landmarkSearch}
-                  suggestions={landmarkSuggestions}
+                  suggestions={searchSuggestions}
+                  badges={searchBadges}
                   onChange={setLandmarkSearch}
                   onSelect={handleLandmarkSelect}
                 />
@@ -2596,13 +2649,15 @@ export function TOPSMapViewPage() {
               filteringActive={filteringActive}
               landmarkCount={landmarkCount}
               serverLandmarkCount={serverLandmarkCount}
+              miscCount={miscCount}
               terminusCount={terminusCount}
               traderCount={traderCount}
               recentTLCount={recentTLIdSet.size}
               activeGroupingCount={activeGroupingIds.size}
               onOpenGroupings={openGroupings}
               landmarkSearch={landmarkSearch}
-              landmarkSuggestions={landmarkSuggestions}
+              landmarkSuggestions={searchSuggestions}
+              landmarkSuggestionBadges={searchBadges}
               onLandmarkSearchChange={setLandmarkSearch}
               onLandmarkSelect={handleLandmarkSelect}
               favoriteStartingPosition={favoriteStartingPosition}

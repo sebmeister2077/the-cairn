@@ -43,6 +43,9 @@ interface LayersSectionProps {
   showLandmarks: boolean;
   setShowLandmarks: (next: boolean) => void;
   landmarkCount: number;
+  showMisc: boolean;
+  setShowMisc: (next: boolean) => void;
+  miscCount: number;
   showTerminus: boolean;
   setShowTerminus: (next: boolean) => void;
   terminusCount: number;
@@ -85,6 +88,9 @@ export const LayersSection = memo(function LayersSection({
   showLandmarks,
   setShowLandmarks,
   landmarkCount,
+  showMisc,
+  setShowMisc,
+  miscCount,
   showTerminus,
   setShowTerminus,
   terminusCount,
@@ -165,6 +171,20 @@ export const LayersSection = memo(function LayersSection({
             <span className="font-medium text-foreground">{landmarkCount.toLocaleString()}</span>
           </span>
         </div>
+        {miscCount > 0 && (
+          <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+            <Switch
+              checked={showMisc}
+              onCheckedChange={setShowMisc}
+              aria-label={t("topsMap.showMiscOverlay")}
+            />
+            <Label>{t("topsMap.showMisc")}</Label>
+            <span className="text-xs text-muted-foreground ml-2">
+              {t("topsMap.miscFound")}{" "}
+              <span className="font-medium text-foreground">{miscCount.toLocaleString()}</span>
+            </span>
+          </div>
+        )}
         <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
           <Switch
             checked={showTerminus}

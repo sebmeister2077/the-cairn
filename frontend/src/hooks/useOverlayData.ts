@@ -40,7 +40,14 @@ export const TRADERS_QUERY_KEY = ["overlay", "traders"] as const;
 // fetch can't race the deadline.
 const EXPIRY_GUARD_MS = 60_000;
 
-export function parseLandmarks(json: unknown): WorldPointMarker[] {
+export function parseLandmarks(
+    json: unknown,
+    options?: { includeMisc?: boolean },
+): WorldPointMarker[] {
+    // "Misc" waypoints are hidden by default and only surfaced for the
+    // WebCartographer source via its own dedicated toggle/search, so callers
+    // must opt in explicitly to keep them in the parsed set.
+    const includeMisc = options?.includeMisc ?? false;
     const features = Array.isArray((json as { features?: unknown })?.features)
         ? ((json as { features: unknown[] }).features)
         : [];
@@ -55,7 +62,7 @@ export function parseLandmarks(json: unknown): WorldPointMarker[] {
         if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
 
         const props = (f?.properties ?? {}) as LandmarkProperty & { origin?: unknown };
-        if (props.type === "Misc") continue;
+        if (!includeMisc && props.type === "Misc") continue;
 
         points.push({
             x,

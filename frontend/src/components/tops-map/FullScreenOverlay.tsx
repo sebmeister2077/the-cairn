@@ -26,6 +26,7 @@ import {
   toggleActiveGrouping as toggleActiveGroupingAction,
   setShowLandmarks as setShowLandmarksAction,
   setShowServerLandmarks as setShowServerLandmarksAction,
+  setShowMisc as setShowMiscAction,
   setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
   setShowElkConnections as setShowElkConnectionsAction,
@@ -80,6 +81,7 @@ type FullscreenControlsOverlayProps = {
   filteringActive: boolean;
   landmarkCount: number;
   serverLandmarkCount: number;
+  miscCount: number;
   terminusCount: number;
   traderCount: number;
   recentTLCount: number;
@@ -87,6 +89,7 @@ type FullscreenControlsOverlayProps = {
   onOpenGroupings: () => void;
   landmarkSearch: string;
   landmarkSuggestions: string[];
+  landmarkSuggestionBadges?: Record<string, string>;
   onLandmarkSearchChange: (next: string) => void;
   onLandmarkSelect: (name: string) => void;
   favoriteStartingPosition: { x: number; z: number; zoom?: number } | null;
@@ -128,6 +131,7 @@ export function FullscreenControlsOverlay({
   filteringActive,
   landmarkCount,
   serverLandmarkCount,
+  miscCount,
   terminusCount,
   traderCount,
   recentTLCount,
@@ -135,6 +139,7 @@ export function FullscreenControlsOverlay({
   onOpenGroupings,
   landmarkSearch,
   landmarkSuggestions,
+  landmarkSuggestionBadges,
   onLandmarkSearchChange,
   onLandmarkSelect,
   favoriteStartingPosition,
@@ -176,6 +181,11 @@ export function FullscreenControlsOverlay({
   const showServerLandmarks = useAppSelector((s) => s.mapView.showServerLandmarks);
   const setShowServerLandmarks = useCallback(
     (next: boolean) => dispatch(setShowServerLandmarksAction(next)),
+    [dispatch],
+  );
+  const showMisc = useAppSelector((s) => s.mapView.showMisc);
+  const setShowMisc = useCallback(
+    (next: boolean) => dispatch(setShowMiscAction(next)),
     [dispatch],
   );
   const showTerminus = useAppSelector((s) => s.mapView.showTerminus);
@@ -545,6 +555,23 @@ export function FullscreenControlsOverlay({
               {landmarkCount.toLocaleString()}
             </span>
           </div>
+          {miscCount > 0 && (
+            <div
+              onClick={() => setShowMisc(!showMisc)}
+              className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+            >
+              <Switch checked={showMisc} aria-label={t("topsMap.showMiscOverlay")} />
+              <Label className="cursor-pointer text-xs leading-tight">
+                {t("topsMap.showMisc")}
+                <span className="block text-[10px] text-muted-foreground">
+                  {t("topsMap.showMiscSubtitle")}
+                </span>
+              </Label>
+              <span className="ml-auto text-xs text-muted-foreground select-none">
+                {miscCount.toLocaleString()}
+              </span>
+            </div>
+          )}
           <div
             onClick={() => setShowTerminus(!showTerminus)}
             className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
@@ -975,6 +1002,7 @@ export function FullscreenControlsOverlay({
           placeholder={t("topsMap.typeToSearch")}
           value={landmarkSearch}
           suggestions={landmarkSuggestions}
+          badges={landmarkSuggestionBadges}
           onChange={onLandmarkSearchChange}
           onSelect={(name) => {
             onLandmarkSelect(name);
