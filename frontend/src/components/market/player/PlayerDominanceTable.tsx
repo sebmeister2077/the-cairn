@@ -120,7 +120,16 @@ export function PlayerDominanceTable({ rows }: { rows: PlayerDominanceRow[] }) {
                       {row.name}
                     </span>
                     <span>
-                      <Badge variant="outline">{row.side === "sell" ? "Selling" : "Buying"}</Badge>
+                      <Badge
+                        variant="outline"
+                        className={
+                          row.side === "sell"
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400"
+                        }
+                      >
+                        {row.side === "sell" ? "Selling" : "Buying"}
+                      </Badge>
                     </span>
                     <span className="text-right tabular-nums font-medium">
                       {(row.share * 100).toFixed(0)}%
