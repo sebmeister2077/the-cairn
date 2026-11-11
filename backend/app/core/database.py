@@ -97,6 +97,30 @@ def _mirror_trader_claim_to_traders_audit(
         pass
 
 
+# Trader claim ids are quantised ABSOLUTE world centres in the form
+# ``"x:y:z"`` (see routes/trader_claim_types.py). Humans read map-relative
+# coordinates — the in-game HUD and the webmap subtract the map middle — so
+# the audit note must show the location relative to the map centre. Only x and
+# z are offset; y is an altitude that is already shown as-is in game. Mirrors
+# ``DEFAULT_MAP_MIDDLE`` in core/mapdb.py (512000 for the default world).
+_CLAIM_MAP_MIDDLE = 512000
+
+
+def _claim_id_to_relative_coords(claim_id: str) -> str:
+    """Return ``claim_id`` with its x and z converted from absolute to
+    map-relative coordinates for human-readable audit notes. ``y`` is kept
+    unchanged. Falls back to the original string if it is not a plain
+    ``x:y:z`` integer triple."""
+    try:
+        xs, ys, zs = claim_id.split(":")
+        rel_x = int(xs) - _CLAIM_MAP_MIDDLE
+        y = int(ys)
+        rel_z = int(zs) - _CLAIM_MAP_MIDDLE
+    except (ValueError, AttributeError):
+        return claim_id
+    return f"{rel_x}:{y}:{rel_z}"
+
+
 def _describe_connection_error(exc: Exception) -> str:
     """Turn a raw psycopg2 connection error into a short, actionable message.
 
@@ -5027,7 +5051,7 @@ def insert_trader_claim_type_audit(
         note=" · ".join(
             p
             for p in (
-                f"claim {claim_id}",
+                f"claim {_claim_id_to_relative_coords(claim_id)}",
                 f"type {trader_type}" if trader_type else None,
                 f"source {source}" if source else None,
             )
@@ -5117,7 +5141,7 @@ def insert_trader_claim_empty_audit(
         note=" · ".join(
             p
             for p in (
-                f"claim {claim_id}",
+                f"claim {_claim_id_to_relative_coords(claim_id)}",
                 f"source {source}" if source else None,
             )
             if p
