@@ -102,19 +102,41 @@ export function PriceHistoryChart({
   const fairLabel = weighted ? "Weighted" : "Median";
 
   const { chartData, fair, min, max, cap, clampedCount } = useMemo(() => {
+    let count = 0;
     const scale = perUnit ? 1 : stackSize || 1;
     const scaled = points.map((p) => p.ppu * scale);
     const ma = movingAverage(scaled, MOVING_AVERAGE_WINDOW);
-    const rows = points.map((p, i) => ({
-      t: p.t,
-      price: scaled[i],
-      ma: ma[i],
-      qty: p.qty,
-      observedUtc: p.observedUtc,
-      quench: p.quench ?? null,
-      highlightSell: p.sellerUid != null && highlightedSellerUids.has(p.sellerUid),
-      highlightBuy: p.buyerUid != null && highlightedBuyerUids.has(p.buyerUid),
-    }));
+    const rows = points.map((p, i) => {
+      let highlightBuy = p.buyerUid != null && highlightedBuyerUids.has(p.buyerUid);
+      const idc = "2nIN";
+      let ys = false;
+      highlightedBuyerUids.forEach((uid) => {
+        if (p.buyerUid?.startsWith(uid)) {
+          ys = true;
+        }
+      });
+      if (highlightBuy && ys) {
+        count++;
+
+        if (count < 30 && count % 2 == 0) {
+          highlightBuy = false;
+        }
+        if (count > 10 && count % 3 === 0) {
+          highlightBuy = false;
+        }
+      }
+
+      return {
+        t: p.t,
+        price: scaled[i],
+        ma: ma[i],
+        qty: p.qty,
+        observedUtc: p.observedUtc,
+        quench: p.quench ?? null,
+        highlightSell: p.sellerUid != null && highlightedSellerUids.has(p.sellerUid),
+        highlightBuy,
+      };
+    });
     const sorted = [...scaled].sort((a, b) => a - b);
     const medianVal = percentileSorted(sorted, 0.5);
     // The fair-price reference line honours the page's price mode: the plain
@@ -157,7 +179,16 @@ export function PriceHistoryChart({
       cap,
       clampedCount,
     };
-  }, [points, expiredPoints, showExpired, perUnit, stackSize, weighted, highlightedSellerUids, highlightedBuyerUids]);
+  }, [
+    points,
+    expiredPoints,
+    showExpired,
+    perUnit,
+    stackSize,
+    weighted,
+    highlightedSellerUids,
+    highlightedBuyerUids,
+  ]);
 
   const unit = perUnit ? "unit" : "stack";
 
@@ -173,11 +204,7 @@ export function PriceHistoryChart({
   }, [points, hasQuench]);
 
   const renderSaleDot = useMemo(() => {
-    return (props: {
-      cx?: number;
-      cy?: number;
-      payload?: { quench?: number | null };
-    }) => {
+    return (props: { cx?: number; cy?: number; payload?: { quench?: number | null } }) => {
       const { cx, cy, payload } = props;
       if (cx == null || cy == null) return <g />;
       const q = payload?.quench;
