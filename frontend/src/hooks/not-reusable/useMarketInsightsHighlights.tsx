@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { volumeValue, volumeDisplay, type InsightsVolumeMode } from "@/hooks/useFilteredInsights";
 import type { MarketInsightsHighlight } from "@/components/market/insights/MarketInsightsHighlightCard";
 
-const HIGHLIGHT_MAX = 25;
+const HIGHLIGHT_MAX = 50;
 
 export function useMarketInsightsHighlights(rows: InsightsRow[], volumeMode: InsightsVolumeMode) {
   return useMemo<MarketInsightsHighlight[]>(() => {
