@@ -33,6 +33,10 @@ export interface SalePoint {
   /** Quench power (temper boost) of the tool sold, as a fraction (0.25 = +25%),
    * when this is a quenched tool/weapon. Used to colour the sale dot. */
   quench?: number | null;
+  /** Seller/buyer uids of the trade, so the chart can highlight the sales of a
+   * player selected in the "Market concentration" panel. */
+  sellerUid?: string | null;
+  buyerUid?: string | null;
 }
 
 // Y-axis ceiling for the expired-listings overlay, as a multiple of the median
@@ -40,6 +44,16 @@ export interface SalePoint {
 // this are pinned to the top instead of stretching the whole chart.
 const EXPIRED_CAP_MULTIPLE = 5;
 const MOVING_AVERAGE_WINDOW = 21;
+
+// Highlight colours for sales of a player toggled on in the "Market
+// concentration" panel. The seller ring and buyer ring are deliberately
+// distinct so a sale that is both a selected seller's and a selected buyer's
+// trade shows two concentric rings. These must match the toggle colours in
+// `ItemConcentrationSection`.
+const SELL_HIGHLIGHT_COLOR = "#0ea5e9";
+const BUY_HIGHLIGHT_COLOR = "#ec4899";
+
+const EMPTY_UID_SET: ReadonlySet<string> = new Set();
 
 export function PriceHistoryChart({
   points,
@@ -50,6 +64,8 @@ export function PriceHistoryChart({
   showUnsold,
   onShowUnsoldChange,
   realDateForGameHours,
+  highlightedSellerUids = EMPTY_UID_SET,
+  highlightedBuyerUids = EMPTY_UID_SET,
 }: {
   points: SalePoint[];
   /** Expired-but-not-cancelled listings that never sold, plotted at their asking
@@ -69,6 +85,11 @@ export function PriceHistoryChart({
    * the x-axis secondary line uses this consistent linear anchor instead of
    * snapping to the nearest recorded sale's observed timestamp. */
   realDateForGameHours?: (gameHours: number) => string | null;
+  /** Uids of sellers/buyers toggled on in the "Market concentration" panel.
+   * Sales matching a selected seller get a sky ring; those matching a selected
+   * buyer get a pink ring (both when a sale matches on both sides). */
+  highlightedSellerUids?: ReadonlySet<string>;
+  highlightedBuyerUids?: ReadonlySet<string>;
 }) {
   const canStack = stackSize > 1;
   const [perUnit, setPerUnit] = useState(defaultPerUnit || !canStack);
@@ -91,6 +112,8 @@ export function PriceHistoryChart({
       qty: p.qty,
       observedUtc: p.observedUtc,
       quench: p.quench ?? null,
+      highlightSell: p.sellerUid != null && highlightedSellerUids.has(p.sellerUid),
+      highlightBuy: p.buyerUid != null && highlightedBuyerUids.has(p.buyerUid),
     }));
     const sorted = [...scaled].sort((a, b) => a - b);
     const medianVal = percentileSorted(sorted, 0.5);
@@ -134,7 +157,7 @@ export function PriceHistoryChart({
       cap,
       clampedCount,
     };
-  }, [points, expiredPoints, showExpired, perUnit, stackSize, weighted]);
+  }, [points, expiredPoints, showExpired, perUnit, stackSize, weighted, highlightedSellerUids, highlightedBuyerUids]);
 
   const unit = perUnit ? "unit" : "stack";
 
@@ -163,7 +186,29 @@ export function PriceHistoryChart({
     };
   }, [hasQuench]);
 
-  // Ticks sit at in-game times (`t`), not real timestamps. Prefer the shared
+  // Highlight rings for sales of a toggled-on seller/buyer. Drawn as a separate
+  // scatter layer on top of the base dots; the shape returns an empty group for
+  // points that aren't selected so only the relevant sales get a ring.
+  const hasSellHighlights = highlightedSellerUids.size > 0;
+  const hasBuyHighlights = highlightedBuyerUids.size > 0;
+  const renderSellHighlight = useMemo(() => {
+    return (props: { cx?: number; cy?: number; payload?: { highlightSell?: boolean } }) => {
+      const { cx, cy, payload } = props;
+      if (cx == null || cy == null || !payload?.highlightSell) return <g />;
+      return (
+        <circle cx={cx} cy={cy} r={6} fill="none" stroke={SELL_HIGHLIGHT_COLOR} strokeWidth={2} />
+      );
+    };
+  }, []);
+  const renderBuyHighlight = useMemo(() => {
+    return (props: { cx?: number; cy?: number; payload?: { highlightBuy?: boolean } }) => {
+      const { cx, cy, payload } = props;
+      if (cx == null || cy == null || !payload?.highlightBuy) return <g />;
+      return (
+        <circle cx={cx} cy={cy} r={9} fill="none" stroke={BUY_HIGHLIGHT_COLOR} strokeWidth={2} />
+      );
+    };
+  }, []);
   // game-hours→real-date anchor when provided (consistent with the overview
   // charts); otherwise snap each tick to the nearest recorded sale's date.
   const realDateAt = useMemo(() => makeRealDateLookup(chartData), [chartData]);
@@ -296,6 +341,24 @@ export function PriceHistoryChart({
               isAnimationActive={false}
               shape={renderSaleDot}
             />
+            {hasSellHighlights && (
+              <Scatter
+                dataKey="price"
+                name="Selected seller"
+                legendType="none"
+                isAnimationActive={false}
+                shape={renderSellHighlight}
+              />
+            )}
+            {hasBuyHighlights && (
+              <Scatter
+                dataKey="price"
+                name="Selected buyer"
+                legendType="none"
+                isAnimationActive={false}
+                shape={renderBuyHighlight}
+              />
+            )}
             <Line
               type="monotone"
               dataKey="ma"
@@ -328,6 +391,30 @@ export function PriceHistoryChart({
             <span className="inline-block size-2 shrink-0 rounded-full bg-[#6366f1]" />
             <span>
               <span className="text-foreground">Sales</span> — each recorded sale, per {unit}.
+            </span>
+          </li>
+        )}
+        {hasSellHighlights && (
+          <li className="flex items-center gap-2">
+            <span
+              className="inline-block size-2.5 shrink-0 rounded-full border-2"
+              style={{ borderColor: SELL_HIGHLIGHT_COLOR }}
+            />
+            <span>
+              <span className="text-foreground">Selected seller</span> — sales made by a seller
+              toggled on in Market concentration.
+            </span>
+          </li>
+        )}
+        {hasBuyHighlights && (
+          <li className="flex items-center gap-2">
+            <span
+              className="inline-block size-2.5 shrink-0 rounded-full border-2"
+              style={{ borderColor: BUY_HIGHLIGHT_COLOR }}
+            />
+            <span>
+              <span className="text-foreground">Selected buyer</span> — sales bought by a buyer
+              toggled on in Market concentration.
             </span>
           </li>
         )}

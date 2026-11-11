@@ -37,6 +37,12 @@ const DOMINANCE_TIER: Record<
 
 type HhiTier = "competitive" | "moderate" | "concentrated" | "monopoly";
 
+// Toggle/highlight colours for selecting a player's trades on the price-history
+// chart. Must match `SELL_HIGHLIGHT_COLOR` / `BUY_HIGHLIGHT_COLOR` in
+// `PriceHistoryChart`.
+const SELL_HIGHLIGHT_COLOR = "#0ea5e9";
+const BUY_HIGHLIGHT_COLOR = "#ec4899";
+
 const HHI_TIER: Record<
   HhiTier,
   { label: string; variant: "secondary" | "destructive" | "default" }
@@ -141,18 +147,25 @@ function aggregateSide(
   };
 }
 
-const GRID = "minmax(6rem,1fr) 4rem minmax(5rem,6rem) 6rem";
+const GRID = "1.25rem minmax(6rem,1fr) 4rem minmax(5rem,6rem) 6rem";
 
 function SideTable({
   title,
   side,
   minTrades,
   minShare,
+  selectedUids,
+  onToggle,
+  highlightColor,
 }: {
   title: string;
   side: SideResult;
   minTrades: number;
   minShare: number;
+  /** Uids currently toggled on for this side (highlighted in the chart). */
+  selectedUids: ReadonlySet<string>;
+  onToggle: (uid: string) => void;
+  highlightColor: string;
 }) {
   const dominant = side.rows.filter((r) => r.trades >= minTrades && r.share >= minShare);
   return (
@@ -185,6 +198,7 @@ function SideTable({
             className="grid items-center gap-2 border-b bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground"
             style={{ gridTemplateColumns: GRID }}
           >
+            <span className="sr-only">Highlight</span>
             <span>Player</span>
             <span className="text-right">Share</span>
             <span className="text-right">Units</span>
@@ -193,16 +207,42 @@ function SideTable({
           <div className="max-h-72 overflow-auto">
             {dominant.map((r) => {
               const tier = DOMINANCE_TIER[r.tier];
+              const selected = selectedUids.has(r.uid);
               return (
-                <Link
+                <div
                   key={r.uid}
-                  to={`/market/players/${encodeURIComponent(r.uid)}`}
                   className="grid items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-accent/50"
-                  style={{ gridTemplateColumns: GRID }}
+                  style={{
+                    gridTemplateColumns: GRID,
+                    backgroundColor: selected ? `${highlightColor}22` : undefined,
+                  }}
                 >
-                  <span className="truncate text-primary hover:underline" title={r.name}>
+                  <button
+                    type="button"
+                    onClick={() => onToggle(r.uid)}
+                    aria-pressed={selected}
+                    title={
+                      selected
+                        ? `Stop highlighting ${r.name}'s trades`
+                        : `Highlight ${r.name}'s trades on the price chart`
+                    }
+                    className="inline-flex size-4 cursor-pointer items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    style={{
+                      borderColor: highlightColor,
+                      backgroundColor: selected ? highlightColor : "transparent",
+                    }}
+                  >
+                    <span className="sr-only">
+                      {selected ? "Highlighted" : "Highlight on chart"}
+                    </span>
+                  </button>
+                  <Link
+                    to={`/market/players/${encodeURIComponent(r.uid)}`}
+                    className="truncate text-primary hover:underline"
+                    title={r.name}
+                  >
                     {r.name}
-                  </span>
+                  </Link>
                   <span className="text-right font-medium tabular-nums">
                     {(r.share * 100).toFixed(0)}%
                   </span>
@@ -217,7 +257,7 @@ function SideTable({
                   <span className="text-right">
                     <Badge variant={tier.variant}>{tier.label}</Badge>
                   </span>
-                </Link>
+                </div>
               );
             })}
           </div>
@@ -232,7 +272,21 @@ function SideTable({
  * listings restricted to the selected window (all forms merged); only sold
  * listings count toward the buy/sell power figures.
  */
-export function ItemConcentrationSection({ listings }: { listings: AuctionListing[] }) {
+export function ItemConcentrationSection({
+  listings,
+  selectedSellerUids,
+  selectedBuyerUids,
+  onToggleSeller,
+  onToggleBuyer,
+}: {
+  listings: AuctionListing[];
+  /** Seller uids toggled on for chart highlighting. */
+  selectedSellerUids: ReadonlySet<string>;
+  /** Buyer uids toggled on for chart highlighting. */
+  selectedBuyerUids: ReadonlySet<string>;
+  onToggleSeller: (uid: string) => void;
+  onToggleBuyer: (uid: string) => void;
+}) {
   // User-adjustable thresholds for *listing* a player as dominant. Persisted in
   // the store (root envelope) so they survive reloads and stay in sync across
   // tabs and item pages.
@@ -290,7 +344,8 @@ export function ItemConcentrationSection({ listings }: { listings: AuctionListin
           </Popover>
         </div>
         <p className="mb-3 text-xs text-muted-foreground">
-          Players moving a large share of this item's completed trades.
+          Players moving a large share of this item's completed trades. Toggle the dot beside a
+          player to highlight their trades on the price-history chart.
         </p>
 
         {/* Adjustable thresholds */}
@@ -322,8 +377,24 @@ export function ItemConcentrationSection({ listings }: { listings: AuctionListin
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <SideTable title="Selling power" side={sell} minTrades={minTrades} minShare={minShare} />
-          <SideTable title="Buying power" side={buy} minTrades={minTrades} minShare={minShare} />
+          <SideTable
+            title="Selling power"
+            side={sell}
+            minTrades={minTrades}
+            minShare={minShare}
+            selectedUids={selectedSellerUids}
+            onToggle={onToggleSeller}
+            highlightColor={SELL_HIGHLIGHT_COLOR}
+          />
+          <SideTable
+            title="Buying power"
+            side={buy}
+            minTrades={minTrades}
+            minShare={minShare}
+            selectedUids={selectedBuyerUids}
+            onToggle={onToggleBuyer}
+            highlightColor={BUY_HIGHLIGHT_COLOR}
+          />
         </div>
       </CardContent>
     </Card>

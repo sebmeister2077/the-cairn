@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, lazy, Suspense, useEffect } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ExternalLink, Info, ArrowLeft, ArrowUp, TriangleAlert, ChevronDown } from "lucide-react";
 import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
@@ -160,6 +161,39 @@ export function MarketItemPage() {
   const [volumeMode, setVolumeMode] = useState<"price" | "unit">("price");
   // Whether the expanded, hoverable price-history chart is shown under the title.
   const [historyExpanded, setHistoryExpanded] = useState(false);
+
+  // Sellers/buyers toggled on in the "Market concentration" panel, whose trades
+  // are highlighted on the price-history chart. Kept as local UI state (ephemeral
+  // — not persisted). Toggling a player on also expands the chart so the
+  // highlight is visible even when the history was collapsed.
+  const [highlightedSellerUids, setHighlightedSellerUids] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const [highlightedBuyerUids, setHighlightedBuyerUids] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const toggleUidIn = useCallback(
+    (setFn: Dispatch<SetStateAction<ReadonlySet<string>>>, uid: string) => {
+      setFn((prev) => {
+        const next = new Set(prev);
+        if (next.has(uid)) next.delete(uid);
+        else {
+          next.add(uid);
+          setHistoryExpanded(true);
+        }
+        return next;
+      });
+    },
+    [],
+  );
+  const toggleHighlightedSeller = useCallback(
+    (uid: string) => toggleUidIn(setHighlightedSellerUids, uid),
+    [toggleUidIn],
+  );
+  const toggleHighlightedBuyer = useCallback(
+    (uid: string) => toggleUidIn(setHighlightedBuyerUids, uid),
+    [toggleUidIn],
+  );
 
   // Ores are a single ore type embedded in different host rocks — a distinct
   // block id per rock (e.g. "Ore bountiful hematite granite" vs "…peridotite")
@@ -476,6 +510,8 @@ export function MarketItemPage() {
         price: l.price,
         observedUtc: l.observedUtc ?? l.lastObservedUtc ?? null,
         quench: listingQuenchPower(l),
+        sellerUid: l.sellerUid,
+        buyerUid: l.buyerUid,
       }))
       .sort((a, b) => a.t - b.t);
   }, [pricedWindowListings]);
@@ -1166,6 +1202,8 @@ export function MarketItemPage() {
                       dispatch(patchAuctionFilters({ showUnsoldPriceHistory: v }))
                     }
                     realDateForGameHours={realDateForGameHours}
+                    highlightedSellerUids={highlightedSellerUids}
+                    highlightedBuyerUids={highlightedBuyerUids}
                   />
                 </CardContent>
               </Card>
@@ -1402,7 +1440,13 @@ export function MarketItemPage() {
         volumeSeries={volumeSeries}
       />
 
-      <ItemConcentrationSection listings={windowListings} />
+      <ItemConcentrationSection
+        listings={windowListings}
+        selectedSellerUids={highlightedSellerUids}
+        selectedBuyerUids={highlightedBuyerUids}
+        onToggleSeller={toggleHighlightedSeller}
+        onToggleBuyer={toggleHighlightedBuyer}
+      />
 
       <RecentListingsSection
         listings={windowListings}
