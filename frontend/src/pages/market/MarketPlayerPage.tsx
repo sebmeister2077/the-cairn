@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
+import { usePageSeo } from "@/hooks/usePageSeo";
 import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -154,6 +155,12 @@ export function MarketPlayerPage() {
     decodedUid || null,
     name && name !== decodedUid ? name : null,
   );
+  // Player profiles are personal trading histories, so keep them out of search results.
+  usePageSeo({
+    title: name && name !== decodedUid ? `${name} – Auction House Trader` : "Auction House Trader",
+    description: "Trading profile of a player on the Vintage Story TOPS auction house.",
+    noindex: true,
+  });
 
   if (isLoading) {
     return (

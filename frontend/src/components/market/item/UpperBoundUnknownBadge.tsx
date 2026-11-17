@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
  * — so we flag that the true upper bound is unknown. */
 export function UpperBoundUnknownBadge() {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-1 text-sm font-medium text-amber-600">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-1 text-sm font-medium text-amber-800 dark:text-amber-400">
       <ArrowUp className="size-4" aria-hidden />
       Upper price bound unknown
       <Popover>

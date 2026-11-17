@@ -59,7 +59,9 @@ export function CommandsPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("commandsPage.title")}</CardTitle>
+        <CardTitle>
+          <h1>{t("commandsPage.title")}</h1>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <SafetyNotice mode="read" />

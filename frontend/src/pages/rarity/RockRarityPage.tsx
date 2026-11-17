@@ -88,7 +88,9 @@ export function RockRarityPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <CardTitle>{t("rarityPage.rocks.title")}</CardTitle>
+            <CardTitle>
+              <h1>{t("rarityPage.rocks.title")}</h1>
+            </CardTitle>
             <MaintenanceChip component="rarity_rocks" />
           </div>
           <CardDescription>{t("rarityPage.rocks.subtitle")}</CardDescription>

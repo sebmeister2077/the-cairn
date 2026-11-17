@@ -199,7 +199,7 @@ export function SubmittingTranslocatorScreenshotsPost() {
           </MiniCard>
           <MiniCard
             heading="Approved"
-            badge={<Badge className="bg-emerald-600 hover:bg-emerald-600">live</Badge>}
+            badge={<Badge className="bg-emerald-700 text-white hover:bg-emerald-700">live</Badge>}
           >
             An admin accepted the pair and Cairn added the TL link to the map.
           </MiniCard>

@@ -7,7 +7,9 @@ export function PrivacyPageRu() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Политика конфиденциальности</CardTitle>
+        <CardTitle>
+          <h1>Политика конфиденциальности</h1>
+        </CardTitle>
         <p className="text-xs text-muted-foreground">Последнее обновление: {LAST_UPDATED}</p>
       </CardHeader>
       <CardContent className="space-y-6 text-sm leading-relaxed text-muted-foreground">

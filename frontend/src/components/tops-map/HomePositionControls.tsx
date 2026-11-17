@@ -61,7 +61,6 @@ export function HomePositionControls({
         size={buttonSize}
         onClick={onJumpHome}
         title={jumpTitle}
-        aria-label={jumpTitle}
       >
         <Home className={iconSize} />
         {!compact && (
@@ -80,7 +79,6 @@ export function HomePositionControls({
         onClick={hasFavorite ? onClear : onSaveCurrent}
         disabled={!hasFavorite && !canSaveCurrent}
         title={pinTitle}
-        aria-label={pinTitle}
       >
         {hasFavorite ? <PinOff className={iconSize} /> : <Pin className={iconSize} />}
         {!compact && (

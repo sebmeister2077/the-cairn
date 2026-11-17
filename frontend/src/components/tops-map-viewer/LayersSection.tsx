@@ -217,6 +217,7 @@ export const LayersSection = memo(function LayersSection({
                 gridTemplateRows: showTraders && traderCount > 0 ? "1fr" : "0fr",
               }}
               aria-hidden={!(showTraders && traderCount > 0)}
+              inert={!(showTraders && traderCount > 0)}
             >
               <div className="overflow-hidden min-h-0">
                 <div className="flex flex-wrap gap-1 pt-3">

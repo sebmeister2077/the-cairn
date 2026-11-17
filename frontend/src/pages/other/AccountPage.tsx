@@ -142,7 +142,9 @@ export function AccountPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t("account.noApiKey.title")}</CardTitle>
+          <CardTitle>
+            <h1>{t("account.noApiKey.title")}</h1>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">{t("account.noApiKey.description")}</p>
@@ -163,7 +165,9 @@ export function AccountPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t("account.register.title")}</CardTitle>
+          <CardTitle>
+            <h1>{t("account.register.title")}</h1>
+          </CardTitle>
           <CardDescription>{t("account.register.description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -223,7 +227,9 @@ export function AccountPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t("account.adminSession.title")}</CardTitle>
+          <CardTitle>
+            <h1>{t("account.adminSession.title")}</h1>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -242,7 +248,7 @@ export function AccountPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">{t("account.page.title")}</h2>
+        <h1 className="text-xl font-semibold">{t("account.page.title")}</h1>
         <p className="text-sm text-muted-foreground mt-0.5">{t("account.page.description")}</p>
       </div>
 

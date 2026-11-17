@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { isValidElement } from "react";
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 
@@ -49,6 +51,11 @@ function Button({
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   if (title) {
+    // The tooltip replaces the native title attribute, so an icon-only button
+    // would be left without an accessible name: use the title as its label.
+    const ariaLabel =
+      props["aria-label"] ??
+      (props["aria-labelledby"] || hasVisibleText(props.children, props.render) ? undefined : title);
     return (
       <Tooltip>
         <TooltipTrigger
@@ -57,6 +64,7 @@ function Button({
               data-slot="button"
               className={cn(buttonVariants({ variant, size, className }))}
               {...props}
+              aria-label={ariaLabel}
             />
           }
         />
@@ -73,6 +81,25 @@ function Button({
       {...props}
     />
   );
+}
+
+/**
+ * Whether the button shows text, either as its children or inside a `render`
+ * element (e.g. `render={<a href="…">Label</a>}`). A render function can't be
+ * inspected, so it's assumed to provide its own text.
+ */
+function hasVisibleText(children: ReactNode, render: ButtonPrimitive.Props["render"]): boolean {
+  if (hasTextContent(children)) return true;
+  if (typeof render === "function") return true;
+  return isValidElement<{ children?: ReactNode }>(render) && hasTextContent(render.props.children);
+}
+
+function hasTextContent(node: ReactNode): boolean {
+  if (typeof node === "string") return node.trim().length > 0;
+  if (typeof node === "number") return true;
+  if (Array.isArray(node)) return node.some(hasTextContent);
+  if (isValidElement<{ children?: ReactNode }>(node)) return hasTextContent(node.props.children);
+  return false;
 }
 
 export { Button, buttonVariants };

@@ -15,7 +15,9 @@ export function BlogIndexPage() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t("blog.index.title")}</CardTitle>
+          <CardTitle>
+            <h1>{t("blog.index.title")}</h1>
+          </CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           <p>{t("blog.index.description")}</p>

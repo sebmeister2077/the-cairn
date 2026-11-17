@@ -26,7 +26,7 @@ export function PreferencesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">{t("preferencesPage.title")}</h2>
+        <h1 className="text-xl font-semibold">{t("preferencesPage.title")}</h1>
         <p className="text-sm text-muted-foreground mt-0.5">{t("preferencesPage.description")}</p>
       </div>
 

@@ -70,7 +70,9 @@ export function ImportPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("importPage.title")}</CardTitle>
+        <CardTitle>
+          <h1>{t("importPage.title")}</h1>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <SafetyNotice mode="modify" />
@@ -98,9 +100,9 @@ export function ImportPage() {
           <SaveFileHelp />
           <div className="grid grid-cols-3 gap-2 items-end">
             <div>
-              <Label>{t("importPage.mode")}</Label>
+              <Label htmlFor="mode">{t("importPage.mode")}</Label>
               <Select value={mode} onValueChange={(v) => v !== null && setMode(v)}>
-                <SelectTrigger>
+                <SelectTrigger id="mode">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

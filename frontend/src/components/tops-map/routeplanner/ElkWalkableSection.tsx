@@ -109,6 +109,7 @@ export function ElkWalkableDraftSection({
           expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
         aria-hidden={!expanded}
+        inert={!expanded}
       >
         <div className="overflow-hidden">
           <div className="space-y-2 border-t px-2 pb-2 pt-2">

@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { buildHistogram } from "@/lib/market/buildHistogram";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useId } from "react";
 
 /** Selectable histogram resolutions. More bins = smaller price step, which
  * resolves tight clusters when an item has big price swings. */
@@ -47,6 +47,7 @@ export function ItemPriceStatsSection({
 }) {
   // Histogram bin count. Higher = finer price buckets (smaller per-unit step).
   const [bins, setBins] = useState(24);
+  const binsId = useId();
   const histogram = useMemo(
     () => buildHistogram(chartPrices, bins, markerValue ?? undefined),
     [chartPrices, bins, markerValue],
@@ -67,9 +68,11 @@ export function ItemPriceStatsSection({
               p75 {histogram.p75.toLocaleString()}
             </span>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">Detail</span>
+              <label htmlFor={binsId} className="text-xs text-muted-foreground">
+                Detail
+              </label>
               <Select value={String(bins)} onValueChange={(v) => setBins(Number(v))}>
-                <SelectTrigger className="h-7 w-30 text-xs">
+                <SelectTrigger id={binsId} className="h-7 w-30 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

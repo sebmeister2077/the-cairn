@@ -602,6 +602,7 @@ export function FullscreenControlsOverlay({
                 gridTemplateRows: showTraders && traderCount > 0 ? "1fr" : "0fr",
               }}
               aria-hidden={!(showTraders && traderCount > 0)}
+              inert={!(showTraders && traderCount > 0)}
             >
               <div className="overflow-hidden min-h-0">
                 <div className="flex flex-wrap gap-1 pt-2">
@@ -766,6 +767,7 @@ export function FullscreenControlsOverlay({
                       : "0fr",
                 }}
                 aria-hidden={!(showRockStrata && rockStrataLegend && rockStrataLegend.length > 0)}
+                inert={!(showRockStrata && rockStrataLegend && rockStrataLegend.length > 0)}
               >
                 <div className="overflow-hidden min-h-0">
                   <div className="flex flex-wrap gap-1 pt-2 max-h-56 overflow-y-auto pr-1">

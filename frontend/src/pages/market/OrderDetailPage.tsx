@@ -27,6 +27,7 @@ import { OrderRequestDialog } from "./orders/OrderRequestDialog";
 import { ReopenOrderDialog } from "./orders/ReopenOrderDialog";
 import { OrderAnalyticsPanel } from "./orders/OrderAnaliticsPanel";
 import { formatGears } from "@/lib/market/auction";
+import { usePageSeo } from "@/hooks/usePageSeo";
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -61,6 +62,13 @@ export function OrderDetailPage() {
       invalidate();
       navigate("/market/orders");
     },
+  });
+
+  // Orders are short-lived, user-written posts, so keep them out of search results.
+  usePageSeo({
+    title: order ? `${order.side === "sell" ? "Selling" : "Buying"}: ${order.item_name}` : "Order",
+    description: "A community buy or sell order on the Vintage Story TOPS server.",
+    noindex: true,
   });
 
   if (featureDisabled) {

@@ -2195,6 +2195,7 @@ export function MapViewer({
                 : "grid-cols-[0fr] opacity-0 pointer-events-none"
             }`}
             aria-hidden={!showTLLegend}
+            inert={!showTLLegend}
           >
             <div className="overflow-hidden min-w-0">
               <TLLegendButton showContributeColors={tlLegendShowContributeColors} />

@@ -2045,7 +2045,7 @@ export function TOPSMapViewPage() {
       {!isFullscreen && (
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-2">
-            <span>{t("topsMap.viewerTitle")}</span>
+            <h1>{t("topsMap.viewerTitle")}</h1>
             <MaintenanceChip component="tops_map_viewer" />
           </CardTitle>
           {/* <p className="text-sm text-muted-foreground">{t("topsMap.viewerDescription")}</p> */}

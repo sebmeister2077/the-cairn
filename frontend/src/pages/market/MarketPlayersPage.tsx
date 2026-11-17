@@ -3,7 +3,7 @@
 // one lightweight row per player (see `usePlayerSearchIndex`) and let the user
 // search, filter by role and sort. Each row links to the full player profile.
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import {
@@ -106,6 +106,7 @@ export function MarketPlayersPage() {
   const rows = usePlayerSearchIndex(listingsQ.data);
   const search = usePlayerSearch();
   const { q, role, sort } = search;
+  const fieldId = useId();
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -143,10 +144,13 @@ export function MarketPlayersPage() {
 
       <div className="rounded-md border p-3 flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Search</Label>
+          <Label htmlFor={`${fieldId}-search`} className="text-xs text-muted-foreground">
+            Search
+          </Label>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              id={`${fieldId}-search`}
               value={q}
               placeholder="Player name…"
               className="h-9 w-64 pl-8"
@@ -157,12 +161,14 @@ export function MarketPlayersPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Role</Label>
+          <Label htmlFor={`${fieldId}-role`} className="text-xs text-muted-foreground">
+            Role
+          </Label>
           <Select
             value={role}
             onValueChange={(v) => patchPlayerSearch({ role: (v as PlayerRole) ?? "all" })}
           >
-            <SelectTrigger className="h-9 w-40">
+            <SelectTrigger id={`${fieldId}-role`} className="h-9 w-40">
               <SelectValue>
                 {(value) => ROLE_LABELS[value as PlayerRole] ?? ROLE_LABELS.all}
               </SelectValue>
@@ -178,12 +184,14 @@ export function MarketPlayersPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Sort by</Label>
+          <Label htmlFor={`${fieldId}-sort`} className="text-xs text-muted-foreground">
+            Sort by
+          </Label>
           <Select
             value={sort}
             onValueChange={(v) => patchPlayerSearch({ sort: (v as PlayerSort) ?? "revenue" })}
           >
-            <SelectTrigger className="h-9 w-40">
+            <SelectTrigger id={`${fieldId}-sort`} className="h-9 w-40">
               <SelectValue>
                 {(value) => SORT_LABELS[value as PlayerSort] ?? SORT_LABELS.revenue}
               </SelectValue>

@@ -60,7 +60,7 @@ storage, a relational database, and a set of in-process background workers.
 | 3D | three.js via react-three-fiber / drei (tunnel previewer) |
 | Auth (admin) | SimpleWebAuthn browser (passkeys) + TOTP (QR via `qrcode`) |
 | i18n | Custom provider, English + Russian |
-| Deployment | Vercel (SPA, all routes rewrite to `index.html`) |
+| Deployment | Vercel (SPA; routes without a generated `<route>/index.html` rewrite to `index.html`) |
 | Dev port | 5173 |
 
 ### Structure
@@ -85,6 +85,7 @@ src/
   lib/
     api.ts          — all fetch calls to the backend
     i18n/           — translation provider + dictionaries
+    seo/            — per-route titles, descriptions, canonical/noindex (see SEO below)
     vs-icons.ts     — Vintage Story icon mappings
     identify-maps.ts— client-side map hash logic
   hooks/, store/, models/, workers/
@@ -101,6 +102,24 @@ TanStack Query results are persisted to `localStorage` (opt-in per query via
 `meta.persist`) so cached TOPS-map chunk URLs and WebCartographer overlays
 survive reloads. A global `auth-rejected` event (dispatched by `api.ts` on a
 `401`) purges both the in-memory and persisted caches.
+
+### SEO
+
+Each static route's title, meta description, canonical URL and `noindex` flag
+live in `src/lib/seo/pages.ts`, so new routes need an entry there. Pages whose
+content is dynamic (blog posts, market items, the 404 page) call `usePageSeo`
+themselves. `<RouteSeo />` applies the metadata to `<head>` on every
+navigation, and the `plugins/seo.ts` Vite plugin uses the same data at build
+time to:
+
+- write `dist/<route>/index.html` with that route's `<head>`. Vercel serves
+  these files before the SPA rewrite, so crawlers and link previews that don't
+  run JavaScript still see the right title, description and canonical URL;
+- generate `dist/sitemap.xml`, which `public/robots.txt` points to.
+
+`npm run lighthouse` audits every public page with Lighthouse (SEO,
+accessibility, best practices) and checks titles, descriptions and canonical
+URLs across pages. See `scripts/lighthouse-audit.mjs` for the options.
 
 ### Admin Detection & Elevation
 

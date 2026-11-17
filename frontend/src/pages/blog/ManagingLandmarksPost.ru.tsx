@@ -128,7 +128,7 @@ export function ManagingLandmarksPostRu() {
           </MiniCard>
           <MiniCard
             heading="Approved"
-            badge={<Badge className="bg-emerald-600 hover:bg-emerald-600">live</Badge>}
+            badge={<Badge className="bg-emerald-700 text-white hover:bg-emerald-700">live</Badge>}
           >
             Новое имя принято и уже видно всем пользователям карты.
           </MiniCard>

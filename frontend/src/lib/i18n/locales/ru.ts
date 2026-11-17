@@ -730,6 +730,7 @@ const ru = {
         },
     },
     contributeTLsPage: {
+        title: "Добавление транслокаторов",
         tabs: {
             fromScreenshots: "По скриншотам",
             fromChatLog: "Из чат-лога",

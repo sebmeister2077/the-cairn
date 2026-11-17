@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -57,12 +58,16 @@ export function MarketFilterBar({
 }) {
   const dispatch = useAppDispatch();
   const f = useAppSelector((s) => s.auctionFilters);
+  const id = useId();
 
   return (
     <div className="rounded-md border p-3 flex flex-wrap items-end gap-3">
       <div className="flex flex-col gap-1 min-h-14">
-        <Label className="text-xs text-muted-foreground">Search</Label>
+        <Label htmlFor={`${id}-search`} className="text-xs text-muted-foreground">
+          Search
+        </Label>
         <Input
+          id={`${id}-search`}
           value={f.q}
           placeholder="Item, seller or buyer…"
           className="h-9 w-56"
@@ -71,14 +76,16 @@ export function MarketFilterBar({
       </div>
 
       <div className="flex flex-col gap-1 min-h-14">
-        <Label className="text-xs text-muted-foreground">Category</Label>
+        <Label htmlFor={`${id}-category`} className="text-xs text-muted-foreground">
+          Category
+        </Label>
         <Select
           value={f.customCategory === "" ? ALL_CATEGORIES : f.customCategory}
           onValueChange={(v) =>
             dispatch(patchAuctionFilters({ customCategory: v === ALL_CATEGORIES ? "" : (v ?? "") }))
           }
         >
-          <SelectTrigger size="sm" className="w-48 grow">
+          <SelectTrigger id={`${id}-category`} size="sm" className="w-48 grow">
             <SelectValue>
               {(value) => (value === ALL_CATEGORIES || !value ? "All categories" : value)}
             </SelectValue>
@@ -95,14 +102,16 @@ export function MarketFilterBar({
       </div>
 
       <div className="flex flex-col gap-1 min-h-14">
-        <Label className="text-xs text-muted-foreground">In-Game Category</Label>
+        <Label htmlFor={`${id}-game-category`} className="text-xs text-muted-foreground">
+          In-Game Category
+        </Label>
         <Select
           value={f.category === "" ? ALL_CATEGORIES : f.category}
           onValueChange={(v) =>
             dispatch(patchAuctionFilters({ category: v === ALL_CATEGORIES ? "" : (v ?? "") }))
           }
         >
-          <SelectTrigger size="sm" className="w-48 grow">
+          <SelectTrigger id={`${id}-game-category`} size="sm" className="w-48 grow">
             <SelectValue>
               {(value) => (value === ALL_CATEGORIES || !value ? "All categories" : value)}
             </SelectValue>
@@ -119,12 +128,14 @@ export function MarketFilterBar({
       </div>
 
       <div className="flex flex-col gap-1 min-h-14">
-        <Label className="text-xs text-muted-foreground">Status</Label>
+        <Label htmlFor={`${id}-status`} className="text-xs text-muted-foreground">
+          Status
+        </Label>
         <Select
           value={f.state}
           onValueChange={(v) => dispatch(patchAuctionFilters({ state: v as AuctionStateFilter }))}
         >
-          <SelectTrigger size="sm" className="w-32 grow">
+          <SelectTrigger id={`${id}-status`} size="sm" className="w-32 grow">
             <SelectValue>{(value) => STATE_LABELS[value as string] ?? value}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -159,8 +170,11 @@ export function MarketFilterBar({
       </div>
 
       <div className="flex flex-col gap-1  min-h-14">
-        <Label className="text-xs text-muted-foreground">Exclude players</Label>
+        <Label htmlFor={`${id}-exclude`} className="text-xs text-muted-foreground">
+          Exclude players
+        </Label>
         <Input
+          id={`${id}-exclude`}
           value={f.excludePlayers ?? ""}
           placeholder="Seller/buyer names, comma-separated"
           className="h-9 w-56"
@@ -170,13 +184,15 @@ export function MarketFilterBar({
       </div>
 
       <div className="flex flex-col gap-1 min-h-14">
-        <Label className="text-xs text-muted-foreground">Sort by</Label>
+        <Label htmlFor={`${id}-sort`} className="text-xs text-muted-foreground">
+          Sort by
+        </Label>
         <div className="flex items-center gap-1">
           <Select
             value={f.sort}
             onValueChange={(v) => dispatch(patchAuctionFilters({ sort: v as AuctionSortKey }))}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger id={`${id}-sort`} className="w-40">
               <SelectValue>{(value) => SORT_LABELS[value as string] ?? value}</SelectValue>
             </SelectTrigger>
             <SelectContent>

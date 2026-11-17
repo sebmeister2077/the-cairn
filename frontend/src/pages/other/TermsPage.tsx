@@ -12,7 +12,9 @@ export function TermsPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Terms of Use</CardTitle>
+        <CardTitle>
+          <h1>Terms of Use</h1>
+        </CardTitle>
         <p className="text-xs text-muted-foreground">Last updated: {LAST_UPDATED}</p>
       </CardHeader>
       <CardContent className="space-y-6 text-sm leading-relaxed text-muted-foreground">

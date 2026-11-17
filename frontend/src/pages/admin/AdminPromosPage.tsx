@@ -106,7 +106,7 @@ export function AdminPromosPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{p.title}</span>
                       {p.active ? (
-                        <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>
+                        <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">Active</Badge>
                       ) : null}
                       {expired ? <Badge variant="secondary">Expired</Badge> : null}
                     </div>

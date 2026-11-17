@@ -11,7 +11,7 @@
 // change the rate. The conversion math is isolated in `computeExchange` so a
 // future multi-item "basket" mode can sum gear values across several rows.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeftRight, Plus, TrendingDown, TrendingUp, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -477,6 +477,7 @@ function ItemStatsLine({ row, basis }: { row: InsightsRow; basis: PriceBasis }) 
 export function MarketConverterPage() {
   const { data: listings, isPending, isError } = useAuctionListings();
   const { data: summary } = useAuctionSummary();
+  const basisId = useId();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [windowKey, setWindowKey] = useMarketWindow();
@@ -671,9 +672,11 @@ export function MarketConverterPage() {
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Price basis:</span>
+          <label htmlFor={basisId} className="text-sm text-muted-foreground">
+            Price basis:
+          </label>
           <Select value={basis} onValueChange={(v) => setBasisSynced(v as PriceBasis)}>
-            <SelectTrigger size="sm" className="w-44">
+            <SelectTrigger id={basisId} size="sm" className="w-44">
               <SelectValue>
                 {(value) => BASIS_OPTIONS.find((o) => o.value === value)?.label ?? value}
               </SelectValue>

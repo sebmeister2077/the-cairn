@@ -103,7 +103,7 @@ export function OrderAnalyticsPanel({
                       <span className="truncate font-medium text-foreground">{f.counterparty}</span>
                     )}
                     {f.flagged && (
-                      <Badge variant="outline" className="text-amber-600 dark:text-amber-400">
+                      <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
                         Flagged
                       </Badge>
                     )}

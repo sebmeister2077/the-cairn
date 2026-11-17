@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /manage
+Disallow: /audit
+Disallow: /usage
+Disallow: /download/
+
+Sitemap: https://the-cairn.com/sitemap.xml

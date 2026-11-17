@@ -134,7 +134,7 @@ export function ContributeUploadCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
-          {t("contributePage.upload.title")}
+          <h1>{t("contributePage.upload.title")}</h1>
           <MaintenanceChip component="tops_contribute_map" />
           {disabled && (
             <Badge variant="destructive" className="ml-auto">

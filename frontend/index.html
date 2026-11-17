@@ -5,32 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="dns-prefetch" href="https://map.tops.vintagestory.at" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Cairn" />
+    <!-- <meta property="og:image" content="/preview.png" /> -->
+    <meta name="twitter:card" content="summary" />
+    <!-- <meta name="twitter:image" content="/preview.png" /> -->
+    <!-- Route-specific tags (title, description, canonical, robots, og/twitter title and
+         description) come from src/lib/seo/pages.ts: the build replaces everything between
+         the seo markers for each route (plugins/seo.ts) and the app updates them on
+         navigation (components/seo/RouteSeo.tsx). Don't hardcode a canonical URL here. -->
+    <!-- seo:start -->
     <title>Cairn – Vintage Story Interactive Map, Translocator Planner & Waypoint Tools</title>
     <meta
       name="description"
-      content="Cairn is a free, community-driven Vintage Story map and toolkit — explore the shared server map with extra overlays (oceans, rock strata, climate, player claims, traders and landmarks), plan translocator routes, track auction house price history, use the tunnel and macro tools and rarity calculator, and extract, import or manage your waypoints."
+      content="Free community toolkit for Vintage Story: explore the TOPS server map with translocators, traders and landmarks, plan routes, track auction house prices and manage your waypoints."
     />
-    <link rel="canonical" href="https://the-cairn.com/" />
-    <!-- Open Graph / Discord / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Cairn" />
-    <meta property="og:url" content="https://the-cairn.com/" />
-    <meta property="og:title" content="Cairn – Vintage Story Interactive Map & Waypoint Tools" />
-    <meta
-      property="og:description"
-      content="A free, community-driven Vintage Story map and toolkit — explore the shared server map with extra overlays (oceans, rock strata, climate, player claims, traders, landmarks), plan translocator routes, track auction house price history, use tunnel and macro tools plus a rarity calculator, and manage your waypoints."
-    />
-    <!-- <meta property="og:image" content="/preview.png" /> -->
-
-    <!-- Twitter -->
-    <!-- <meta name="twitter:card" content="summary_large_image" /> -->
-    <meta name="twitter:url" content="https://the-cairn.com/" />
-    <meta name="twitter:title" content="Cairn – Vintage Story Interactive Map & Waypoint Tools" />
-    <meta
-      name="twitter:description"
-      content="A free, community-driven Vintage Story map and toolkit — explore the shared server map with extra overlays (oceans, rock strata, climate, player claims, traders, landmarks), plan translocator routes, track auction house price history, use tunnel and macro tools plus a rarity calculator, and manage your waypoints."
-    />
-    <!-- <meta name="twitter:image" content="/preview.png" /> -->
+    <!-- seo:end -->
     <!-- NOTE: this inline script is allowlisted in the CSP (vercel.json) by its
          SHA-256 hash. If you edit it, recompute the hash or it will be blocked. -->
     <script>

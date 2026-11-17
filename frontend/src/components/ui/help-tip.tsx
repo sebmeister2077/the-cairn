@@ -29,6 +29,8 @@ function HelpTip({ text }: HelpTipProps) {
 
   return (
     <span className="relative inline-flex ml-1 align-middle">
+      {/* The button is 24px (the minimum touch target) around the 16px circle;
+          the negative margin keeps the horizontal spacing of the 16px version. */}
       <button
         ref={buttonRef}
         type="button"
@@ -39,9 +41,14 @@ function HelpTip({ text }: HelpTipProps) {
           setOpen((o) => !o);
         }}
         onBlur={() => setOpen(false)}
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-muted-foreground/40 text-[10px] leading-none text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-help"
+        className="group -mx-1 inline-flex size-6 items-center justify-center rounded-full text-muted-foreground cursor-help hover:text-accent-foreground"
       >
-        ?
+        <span
+          aria-hidden
+          className="inline-flex size-4 items-center justify-center rounded-full border border-muted-foreground/40 text-[10px] leading-none group-hover:bg-accent"
+        >
+          ?
+        </span>
       </button>
       {open &&
         coords &&

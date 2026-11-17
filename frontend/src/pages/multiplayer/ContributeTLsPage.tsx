@@ -23,6 +23,7 @@ export function ContributeTLsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">
+      <h1 className="text-2xl font-semibold">{t("contributeTLsPage.title")}</h1>
       <Tabs defaultValue="manual">
         <TabsList variant="line">
           <TabsTrigger value="screenshots" disabled>

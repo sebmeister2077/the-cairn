@@ -47,12 +47,12 @@ export function MapSourceStatus({
   > = {
     connected: {
       dot: "bg-emerald-500",
-      text: "text-emerald-600 dark:text-emerald-400",
+      text: "text-emerald-700 dark:text-emerald-400",
       label: t("topsMap.mapSourceConnected"),
     },
     connecting: {
       dot: "bg-amber-500",
-      text: "text-amber-600 dark:text-amber-400",
+      text: "text-amber-700 dark:text-amber-400",
       label: t("topsMap.mapSourceConnecting"),
     },
     down: {

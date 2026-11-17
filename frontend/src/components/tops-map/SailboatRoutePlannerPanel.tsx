@@ -411,6 +411,7 @@ export function SailboatRoutePlannerPanel({
             settingsOpen ? "grid-rows-[1fr]" : "mt-0! grid-rows-[0fr]",
           )}
           aria-hidden={!settingsOpen}
+          inert={!settingsOpen}
         >
           <div className="overflow-hidden">
             <div className="space-y-3 rounded-md border bg-muted/30 p-3">

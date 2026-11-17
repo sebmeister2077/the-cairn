@@ -724,6 +724,7 @@ const nl = {
         },
     },
     contributeTLsPage: {
+        title: "Translocators bijdragen",
         tabs: {
             fromScreenshots: "Van screenshots",
             fromChatLog: "Van chat‑log",

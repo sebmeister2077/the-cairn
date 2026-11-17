@@ -12,7 +12,9 @@ export function PrivacyPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Privacy Policy</CardTitle>
+        <CardTitle>
+          <h1>Privacy Policy</h1>
+        </CardTitle>
         <p className="text-xs text-muted-foreground">Last updated: {LAST_UPDATED}</p>
       </CardHeader>
       <CardContent className="space-y-6 text-sm leading-relaxed text-muted-foreground">

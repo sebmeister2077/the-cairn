@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ExternalLink, Info, ArrowLeft, ArrowUp, TriangleAlert, ChevronDown } from "lucide-react";
 import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
+import { usePageSeo } from "@/hooks/usePageSeo";
 import { recordRecentItem } from "@/store/slices/recentItems";
 import {
   ComposedChart,
@@ -854,6 +855,26 @@ export function MarketItemPage() {
     itemListings[0]?.name ??
     null;
   useReportEntityLabel("/market/items/:itemId", itemId ?? null, reportableName);
+  usePageSeo(
+    reportableName
+      ? {
+          title: `${reportableName} Price – Vintage Story Auction House`,
+          description:
+            itemListings.length > 0
+              ? `Price history, typical price and recent sales of ${reportableName} on the Vintage Story TOPS auction house.`
+              : `${reportableName} in Vintage Story: rarity and trader availability. Not sold on the TOPS auction house yet.`,
+        }
+      : listingsQ.isLoading || catalogQ.isLoading
+        ? {
+            title: "Item Price – Vintage Story Auction House",
+            description: "Price history and recent sales on the Vintage Story TOPS auction house.",
+          }
+        : {
+            title: "Item not found",
+            description: "No auction house data for this item.",
+            noindex: true,
+          },
+  );
 
   // Remember this item as recently visited so the Item Search page can offer a
   // quick-jump chip back to it. Keyed on the numeric id + resolved name.
@@ -1339,7 +1360,7 @@ export function MarketItemPage() {
                     render={
                       <button
                         type="button"
-                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 transition-colors hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:text-amber-400"
                       >
                         <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
                         Low confidence

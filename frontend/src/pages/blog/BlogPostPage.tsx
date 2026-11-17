@@ -6,12 +6,22 @@ import { useFormat, useTranslation } from "@/lib/i18n";
 import { ArrowLeft } from "lucide-react";
 import { getPostBySlug } from "./posts";
 import { useDateFormat } from "@/hooks/useDateFormat";
+import { usePageSeo } from "@/hooks/usePageSeo";
 
 export function BlogPostPage() {
   const { locale, t } = useTranslation();
   const { formatDate } = useDateFormat();
   const { slug } = useParams<{ slug: string }>();
   const post = slug ? getPostBySlug(locale, slug) : undefined;
+  usePageSeo(
+    post
+      ? { title: post.title, description: post.excerpt }
+      : {
+          title: t("blog.postPage.notFoundTitle"),
+          description: t("blog.postPage.notFoundDescription"),
+          noindex: true,
+        },
+  );
 
   if (!post) {
     return (

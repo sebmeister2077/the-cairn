@@ -844,6 +844,7 @@ export const en = {
         },
     },
     contributeTLsPage: {
+        title: "Contribute translocators",
         tabs: {
             fromScreenshots: "From screenshots",
             fromChatLog: "From chat log",

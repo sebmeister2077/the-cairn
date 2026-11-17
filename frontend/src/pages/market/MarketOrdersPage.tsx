@@ -143,7 +143,7 @@ export function MarketOrdersPage() {
           value={side || ALL}
           onValueChange={(v) => setSide(v === ALL ? "" : (v as OrderSide))}
         >
-          <SelectTrigger size="sm" className="w-36">
+          <SelectTrigger size="sm" className="w-36" aria-label="Order type">
             <SelectValue placeholder="All orders">
               {(value) => ORDER_SIDE_OPTIONS.find((o) => o.value === value)?.label || "All orders"}
             </SelectValue>
@@ -160,7 +160,7 @@ export function MarketOrdersPage() {
           value={mobility || ALL}
           onValueChange={(v) => setMobility(v === ALL ? "" : (v as TraderMobility))}
         >
-          <SelectTrigger size="sm" className="w-44">
+          <SelectTrigger size="sm" className="w-44" aria-label="Availability">
             <SelectValue placeholder="Any availability">
               {(value) =>
                 MOBILITY_OPTIONS.find((o) => o.value === value)?.label || "Any availability"
@@ -176,7 +176,7 @@ export function MarketOrdersPage() {
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as OrderSort)}>
-          <SelectTrigger size="sm" className="w-40">
+          <SelectTrigger size="sm" className="w-40" aria-label="Sort orders">
             <SelectValue>
               {(value) => SORTING_OPTIONS.find((o) => o.value === value)?.label || "Newest"}
             </SelectValue>

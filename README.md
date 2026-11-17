@@ -240,6 +240,21 @@ Vite serves the SPA (typically http://localhost:5173) and proxies `/api/*` to
 the backend on `:8001`, so the frontend never needs the backend URL directly.
 In production, `VITE_API_BASE` points at the Render service.
 
+To audit SEO and accessibility of every public page with Lighthouse (reports
+are written to `frontend/lighthouse-reports/`):
+
+```powershell
+npm run lighthouse   # audits the production site
+```
+
+To audit a local build instead, run `npm run build` and `npm run preview`, then
+in a second terminal (in PowerShell, `npm.cmd` passes the arguments after `--`
+through):
+
+```powershell
+npm.cmd run lighthouse -- --base http://localhost:4173 --color-scheme light
+```
+
 ---
 
 ## Contributing

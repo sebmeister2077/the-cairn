@@ -1,10 +1,16 @@
 import { NavLink } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { usePageSeo } from "@/hooks/usePageSeo";
 import { useTranslation } from "@/lib/i18n";
 
 export function NotFoundPage() {
   const { t } = useTranslation();
+  usePageSeo({
+    title: t("app.notFound.title"),
+    description: t("app.notFound.description"),
+    noindex: true,
+  });
   return (
     <div className="flex justify-center py-12">
       <Card className="w-full max-w-md text-center">

@@ -86,7 +86,7 @@ export function ContributingElkWalkableRoadsPostRu() {
         <StatusGrid>
           <MiniCard
             heading="Confirmed"
-            badge={<Badge className="bg-emerald-600 hover:bg-emerald-600">подтверждено</Badge>}
+            badge={<Badge className="bg-emerald-700 text-white hover:bg-emerald-700">подтверждено</Badge>}
           >
             Хотя бы один игрок уже заверил этот участок. Планировщик считает его лосиным на полной
             скорости.

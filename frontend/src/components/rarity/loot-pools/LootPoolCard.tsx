@@ -96,6 +96,7 @@ export function PoolCard({
         className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
         style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
         aria-hidden={!isOpen}
+        inert={!isOpen}
       >
         <div className="min-h-0 overflow-hidden">
           <CardContent>

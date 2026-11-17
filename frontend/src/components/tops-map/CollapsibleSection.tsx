@@ -57,6 +57,7 @@ export function CollapsibleSection({
         className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
         style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
         aria-hidden={!open}
+        inert={!open}
       >
         <div className="overflow-hidden min-h-0">
           <div className={cn("flex flex-col gap-2 px-3 pb-3", contentClassName)}>{children}</div>

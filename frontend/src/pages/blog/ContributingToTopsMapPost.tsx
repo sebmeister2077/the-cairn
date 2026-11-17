@@ -257,7 +257,7 @@ export function ContributingToTopsMapPost() {
         </P>
 
         <div className="flex flex-wrap gap-1.5 my-1">
-          <Badge className="bg-emerald-600 hover:bg-emerald-600">Looks like our map</Badge>
+          <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">Looks like our map</Badge>
           <Badge variant="secondary">Partial match</Badge>
           <Badge variant="destructive">May be wrong file</Badge>
         </div>

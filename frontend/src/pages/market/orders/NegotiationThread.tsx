@@ -53,7 +53,7 @@ const STATUS_LABELS: Record<OrderRequest["status"], string> = {
 };
 
 const STATUS_CLASS: Record<OrderRequest["status"], string> = {
-  pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  pending: "bg-amber-500/15 text-amber-800 dark:text-amber-400",
   accepted: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   rejected: "bg-destructive/15 text-destructive",
   withdrawn: "bg-muted text-muted-foreground",

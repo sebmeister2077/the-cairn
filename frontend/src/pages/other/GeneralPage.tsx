@@ -64,7 +64,9 @@ export function GeneralPage() {
       {/* Hero */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl sm:text-3xl">{t("generalPage.title")}</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl">
+            <h1>{t("generalPage.title")}</h1>
+          </CardTitle>
           <p className="text-sm font-medium text-muted-foreground">{t("generalPage.tagline")}</p>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">

@@ -99,6 +99,7 @@ export function TemporalStabilityPanel({ sliceMeta, status, error }: TemporalSta
         className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
         style={{ gridTemplateRows: enabled ? "1fr" : "0fr" }}
         aria-hidden={!enabled}
+        inert={!enabled}
       >
         <div className="overflow-hidden min-h-0">
           <div className="flex flex-col gap-2 pt-2">

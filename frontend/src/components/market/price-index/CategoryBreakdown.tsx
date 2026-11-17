@@ -73,6 +73,8 @@ export function MarketPriceIndexCategoryBreakdown({
                 <div
                   className="grid transition-[grid-template-rows] duration-300 ease-out"
                   style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+                  aria-hidden={!open}
+                  inert={!open}
                 >
                   <div className="overflow-hidden">
                     <CategoryPriceChart points={c.priceTrend} />

@@ -6,6 +6,7 @@ import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persist
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AppContent } from "@/components/AppContent";
 import { PageViewTracker } from "@/components/other/PageViewTracker";
+import { RouteSeo } from "@/components/seo/RouteSeo";
 import {
   getStoredApiKey,
   clearPersistedQueryCache,
@@ -200,6 +201,7 @@ export default function App() {
       <BrowserRouter>
         <ScrollToTop />
         <PageViewTracker />
+        <RouteSeo />
         <AppContent />
       </BrowserRouter>
       {import.meta.env.DEV && (

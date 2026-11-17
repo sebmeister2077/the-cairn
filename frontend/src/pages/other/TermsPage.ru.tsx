@@ -8,7 +8,9 @@ export function TermsPageRu() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Условия использования</CardTitle>
+        <CardTitle>
+          <h1>Условия использования</h1>
+        </CardTitle>
         <p className="text-xs text-muted-foreground">Последнее обновление: {LAST_UPDATED}</p>
       </CardHeader>
       <CardContent className="space-y-6 text-sm leading-relaxed text-muted-foreground">

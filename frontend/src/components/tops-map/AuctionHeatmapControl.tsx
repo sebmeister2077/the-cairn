@@ -74,6 +74,7 @@ export function AuctionHeatmapControl({
         className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
         style={{ gridTemplateRows: active ? "1fr" : "0fr" }}
         aria-hidden={!active}
+        inert={!active}
       >
         <div className="overflow-hidden min-h-0">
           <div className="flex flex-wrap gap-2 pt-3">

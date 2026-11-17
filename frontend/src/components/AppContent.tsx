@@ -842,28 +842,32 @@ export function AppContent() {
         </div>
         <nav className="container mx-auto px-4 pb-2 flex flex-col gap-1">
           <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {/* Each tab renders as the link itself (`render`): wrapping a tab in an <a>
+                breaks the tablist > tab structure that screen readers rely on. */}
             <Tabs value={activeCategory}>
               <TabsList>
                 {categories.map((c) => {
                   const pending = getPendingCountFor(c.value, pendingCounts);
                   return (
-                    <NavLink key={c.value} to={c.value} end={false}>
-                      {() => (
-                        <TabsTrigger value={c.value} className="relative">
-                          {tStatic(c.labelKey as StaticNavLabelKey)}
-                          {pending > 0 && (
-                            <Badge
-                              variant="default"
-                              aria-label={t("app.nav.pendingReviewAria", { count: pending })}
-                              title={t("app.nav.pendingReviewTitle", { count: pending })}
-                              className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
-                            >
-                              {formatPendingCount(pending)}
-                            </Badge>
-                          )}
-                        </TabsTrigger>
+                    <TabsTrigger
+                      key={c.value}
+                      value={c.value}
+                      className="relative"
+                      nativeButton={false}
+                      render={<NavLink to={c.value} end={false} />}
+                    >
+                      {tStatic(c.labelKey as StaticNavLabelKey)}
+                      {pending > 0 && (
+                        <Badge
+                          variant="default"
+                          aria-label={t("app.nav.pendingReviewAria", { count: pending })}
+                          title={t("app.nav.pendingReviewTitle", { count: pending })}
+                          className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
+                        >
+                          {formatPendingCount(pending)}
+                        </Badge>
                       )}
-                    </NavLink>
+                    </TabsTrigger>
                   );
                 })}
               </TabsList>
@@ -879,13 +883,8 @@ export function AppContent() {
                       const showOrdersDot =
                         tab.value === NavigationRoutes.Market.Orders && ordersUnread > 0;
 
-                      const triggerContent = (
-                        <TabsTrigger
-                          value={tab.value}
-                          disabled={tab.disabled}
-                          aria-disabled={tab.disabled}
-                          className="relative"
-                        >
+                      const label = (
+                        <>
                           {tStatic(tab.labelKey as StaticNavLabelKey)}
                           {shouldShowChip(tab) && (
                             <Badge
@@ -912,21 +911,36 @@ export function AppContent() {
                               {formatPendingCount(pending)}
                             </Badge>
                           )}
-                        </TabsTrigger>
+                        </>
                       );
 
                       if (tab.disabled) {
+                        // The wrapper only adds the not-allowed cursor; it must not carry ARIA
+                        // attributes, or the tab would no longer count as part of the tablist.
                         return (
-                          <span key={tab.value} aria-disabled className="cursor-not-allowed">
-                            {triggerContent}
+                          <span key={tab.value} className="cursor-not-allowed">
+                            <TabsTrigger
+                              value={tab.value}
+                              disabled
+                              aria-disabled
+                              className="relative"
+                            >
+                              {label}
+                            </TabsTrigger>
                           </span>
                         );
                       }
 
                       return (
-                        <NavLink key={tab.value} to={tab.value} end>
-                          {() => triggerContent}
-                        </NavLink>
+                        <TabsTrigger
+                          key={tab.value}
+                          value={tab.value}
+                          className="relative"
+                          nativeButton={false}
+                          render={<NavLink to={tab.value} end />}
+                        >
+                          {label}
+                        </TabsTrigger>
                       );
                     })}
                   </TabsList>

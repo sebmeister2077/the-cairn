@@ -107,6 +107,7 @@ export function PlayerClaimsControl({ variant = "card" }: PlayerClaimsControlPro
         className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
         style={{ gridTemplateRows: showPlayerClaims ? "1fr" : "0fr" }}
         aria-hidden={!showPlayerClaims}
+        inert={!showPlayerClaims}
         onTransitionEnd={() => {
           if (showPlayerClaims) setPlayerClaimsPanelExpanded(true);
         }}

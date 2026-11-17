@@ -201,6 +201,7 @@ function SignedInCard({
             isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
           }`}
           aria-hidden={!isExpanded}
+          inert={!isExpanded}
         >
           <div className="overflow-hidden">
             <CardContent

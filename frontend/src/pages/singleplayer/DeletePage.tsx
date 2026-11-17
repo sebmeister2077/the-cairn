@@ -76,7 +76,9 @@ export function DeletePage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("deletePage.title")}</CardTitle>
+        <CardTitle>
+          <h1>{t("deletePage.title")}</h1>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <SafetyNotice mode="modify" />

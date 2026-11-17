@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 import {
@@ -38,6 +38,7 @@ export function LootPoolRarityPage() {
   const [category, setCategory] = useState<CategoryFilter>("all");
   const [rarity, setRarity] = useState<RarityFilter>("all");
   const [query, setQuery] = useState("");
+  const rarityId = useId();
 
   const allPools = useMemo(() => getLootPools(), []);
   const meta = useMemo(() => getLootPoolsMeta(), []);
@@ -91,7 +92,9 @@ export function LootPoolRarityPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <CardTitle>{t("rarityPage.lootPools.title")}</CardTitle>
+            <CardTitle>
+              <h1>{t("rarityPage.lootPools.title")}</h1>
+            </CardTitle>
             <MaintenanceChip component="rarity_loot_pools" />
           </div>
           <CardDescription>{t("rarityPage.lootPools.subtitle")}</CardDescription>
@@ -130,14 +133,14 @@ export function LootPoolRarityPage() {
             </Tabs>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="flex flex-col gap-1">
-                <Label className="text-xs text-muted-foreground">
+                <Label htmlFor={rarityId} className="text-xs text-muted-foreground">
                   {t("rarityPage.lootPools.colRarity")}
                 </Label>
                 <Select
                   value={rarity}
                   onValueChange={(v) => setRarity((v as RarityFilter) ?? "all")}
                 >
-                  <SelectTrigger className="h-9 w-40">
+                  <SelectTrigger id={rarityId} className="h-9 w-40">
                     <SelectValue>
                       {(value) =>
                         value === "all"

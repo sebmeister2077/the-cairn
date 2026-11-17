@@ -11,7 +11,7 @@ export function CantContributeCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
-          {t("contributePage.cantContribute.title")}
+          <h1>{t("contributePage.cantContribute.title")}</h1>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm text-muted-foreground">

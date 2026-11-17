@@ -4,17 +4,17 @@ import type { PriceIndexHeadline } from "@/models/auction";
 const CONFIDENCE_STYLE: Record<string, { label: string; cls: string; blurb: string }> = {
   high: {
     label: "High confidence",
-    cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
     blurb: "Lots of sellers agree and we matched many items, so this estimate is reliable.",
   },
   medium: {
     label: "Medium confidence",
-    cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    cls: "bg-amber-500/15 text-amber-800 dark:text-amber-400",
     blurb: "A fair number of sales back this up, but treat it as a ballpark, not an exact figure.",
   },
   low: {
     label: "Low confidence",
-    cls: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+    cls: "bg-rose-500/15 text-rose-700 dark:text-rose-400",
     blurb:
       "Sellers disagree a lot or there weren't many matching sales — read this as a rough hint.",
   },

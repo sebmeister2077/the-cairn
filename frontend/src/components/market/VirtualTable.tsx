@@ -43,7 +43,7 @@ export function ListingStateBadge({
   const status = deriveListingStatus(listing, currentGameHours);
   switch (status) {
     case "sold":
-      return <Badge className="bg-emerald-600 hover:bg-emerald-600">Sold</Badge>;
+      return <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">Sold</Badge>;
     case "active":
       return <Badge variant="outline">Active</Badge>;
     case "removed":
@@ -116,7 +116,7 @@ export function CancelledCell({ listing }: { listing: AuctionListing }) {
   return (
     <Badge
       variant="secondary"
-      className="border border-amber-500/40 text-xs font-normal text-amber-600 dark:text-amber-400"
+      className="border border-amber-500/40 text-xs font-normal text-amber-700 dark:text-amber-400"
       title="The seller pulled this listing before its natural expiry — cancelled rather than expired naturally"
     >
       Cancelled

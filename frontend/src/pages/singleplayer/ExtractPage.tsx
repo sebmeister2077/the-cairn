@@ -82,7 +82,9 @@ export function ExtractPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("extractPage.title")}</CardTitle>
+        <CardTitle>
+          <h1>{t("extractPage.title")}</h1>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <SafetyNotice mode="read" />

@@ -3,7 +3,7 @@
 // precomputed `summary.json` (`itemStats`) where available — so every item is
 // listed, even ones with no (non-spam) sales yet. Each row links to the item page.
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import {
@@ -123,6 +123,7 @@ export function MarketItemsPage() {
   const recentItems = useAppSelector((s) => s.recentItems.items);
   const dispatch = useAppDispatch();
   const { q, category, customCategory, rarity, sort, sortDir } = search;
+  const fieldId = useId();
 
   // Master list: every catalog item, enriched with stats where we have them.
   const rows = useMemo<SearchRow[]>(() => {
@@ -239,7 +240,6 @@ export function MarketItemsPage() {
                 >
                   <ItemThumb
                     url={row ? images.url(row.iconCode ?? row.code, row.classType) : null}
-                    alt={it.name}
                     className="size-5"
                   />
                   {row?.name ?? it.name}
@@ -252,10 +252,13 @@ export function MarketItemsPage() {
 
       <div className="rounded-md border p-3 flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Search</Label>
+          <Label htmlFor={`${fieldId}-search`} className="text-xs text-muted-foreground">
+            Search
+          </Label>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              id={`${fieldId}-search`}
               value={q}
               placeholder="Item name…"
               className="h-9 w-64 pl-8"
@@ -266,12 +269,14 @@ export function MarketItemsPage() {
         </div>
 
         <div className="flex flex-col gap-1 min-h-14">
-          <Label className="text-xs text-muted-foreground">Category</Label>
+          <Label htmlFor={`${fieldId}-category`} className="text-xs text-muted-foreground">
+            Category
+          </Label>
           <Select
             value={customCategory}
             onValueChange={(v) => patchItemSearch({ customCategory: v ?? ALL_CATEGORIES })}
           >
-            <SelectTrigger className="grow w-48">
+            <SelectTrigger id={`${fieldId}-category`} className="grow w-48">
               <SelectValue>
                 {(value) => (value === ALL_CATEGORIES ? "All categories" : (value as string))}
               </SelectValue>
@@ -288,12 +293,14 @@ export function MarketItemsPage() {
         </div>
 
         <div className="flex flex-col gap-1 min-h-14">
-          <Label className="text-xs text-muted-foreground">In-Game Category</Label>
+          <Label htmlFor={`${fieldId}-game-category`} className="text-xs text-muted-foreground">
+            In-Game Category
+          </Label>
           <Select
             value={category}
             onValueChange={(v) => patchItemSearch({ category: v ?? ALL_CATEGORIES })}
           >
-            <SelectTrigger className="grow w-44">
+            <SelectTrigger id={`${fieldId}-game-category`} className="grow w-44">
               <SelectValue>
                 {(value) => categories.find((c) => c.value === value)?.label ?? "All categories"}
               </SelectValue>
@@ -310,12 +317,14 @@ export function MarketItemsPage() {
         </div>
 
         <div className="flex flex-col gap-1 min-h-14">
-          <Label className="text-xs text-muted-foreground">Rarity</Label>
+          <Label htmlFor={`${fieldId}-rarity`} className="text-xs text-muted-foreground">
+            Rarity
+          </Label>
           <Select
             value={rarity}
             onValueChange={(v) => patchItemSearch({ rarity: v ?? ALL_RARITIES })}
           >
-            <SelectTrigger className="grow w-40">
+            <SelectTrigger id={`${fieldId}-rarity`} className="grow w-40">
               <SelectValue>
                 {(value) =>
                   value === ALL_RARITIES
@@ -336,13 +345,15 @@ export function MarketItemsPage() {
         </div>
 
         <div className="flex flex-col gap-1 min-h-14">
-          <Label className="text-xs text-muted-foreground">Sort by</Label>
+          <Label htmlFor={`${fieldId}-sort`} className="text-xs text-muted-foreground">
+            Sort by
+          </Label>
           <div className="flex items-center gap-1 grow">
             <Select
               value={sort}
               onValueChange={(v) => patchItemSearch({ sort: (v as SortKey) ?? "gears" })}
             >
-              <SelectTrigger className="grow w-40">
+              <SelectTrigger id={`${fieldId}-sort`} className="grow w-40">
                 <SelectValue>
                   {(value) => SORT_LABELS[value as SortKey] ?? SORT_LABELS.gears}
                 </SelectValue>
@@ -404,7 +415,7 @@ export function MarketItemsPage() {
               <TableRow key={it.itemId}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    <ItemThumb url={images.url(it.iconCode ?? it.code, it.classType)} alt={it.name} />
+                    <ItemThumb url={images.url(it.iconCode ?? it.code, it.classType)} />
                     <Link to={`/market/items/${it.itemId}`} className="hover:underline">
                       {it.name}
                     </Link>
