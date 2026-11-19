@@ -516,7 +516,8 @@ export function MarketItemPage() {
       }))
       .sort((a, b) => a.t - b.t);
   }, [pricedWindowListings]);
-
+  const hasMinimumSalePoints = salePoints.length > 2;
+  console.log(hasMinimumSalePoints);
   // Expired-but-not-cancelled listings that never sold, dated by their in-game
   // lapse time (falling back to the posting time). Plotted on the price-history
   // chart to show how much unsold supply sits above the sales cluster — i.e.
@@ -1051,9 +1052,9 @@ export function MarketItemPage() {
             />
           )}
           <h1 className="text-2xl font-semibold">{displayName}</h1>
-          {trend && (
+          {(trend || hasMinimumSalePoints) && (
             <span className="inline-flex items-center gap-1.5">
-              {priceSeries && priceSeries.length >= 2 && (
+              {trend && priceSeries && priceSeries.length >= 2 && (
                 <Sparkline
                   data={priceSeries}
                   width={96}
@@ -1070,8 +1071,10 @@ export function MarketItemPage() {
                   }
                 />
               )}
-              <ItemTrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />
-              {salePoints.length >= 2 && (
+              {trend && (
+                <ItemTrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />
+              )}
+              {hasMinimumSalePoints && (
                 <button
                   type="button"
                   onClick={() => setHistoryExpanded((v) => !v)}
@@ -1202,14 +1205,14 @@ export function MarketItemPage() {
           above and below a 0-height flow child don't add up to a double gap. */}
         <div
           className={`grid overflow-hidden transition-all mt-5 duration-300 ease-out ${
-            historyExpanded && salePoints.length >= 2
+            historyExpanded && hasMinimumSalePoints
               ? "grid-rows-[1fr] opacity-100"
               : "grid-rows-[0fr] opacity-0"
           }`}
-          style={historyExpanded && salePoints.length >= 2 ? undefined : { marginTop: 0 }}
+          style={historyExpanded && hasMinimumSalePoints ? undefined : { marginTop: 0 }}
         >
           <div className="min-h-0 overflow-hidden">
-            {salePoints.length >= 2 && (
+            {hasMinimumSalePoints && (
               <Card>
                 <CardContent className="py-4">
                   <PriceHistoryChart
