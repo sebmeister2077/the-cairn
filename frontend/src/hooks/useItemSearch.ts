@@ -7,7 +7,7 @@
 import { useSyncExternalStore } from "react";
 import { writeIfConsented } from "@/lib/helpers/consent";
 
-export type ItemSort = "gears" | "sold" | "listings" | "name" | "rarity";
+export type ItemSort = "gears" | "sold" | "listings" | "views" | "name" | "rarity";
 
 export interface ItemSearchState {
     q: string;
@@ -37,7 +37,7 @@ export const DEFAULT_ITEM_SEARCH: ItemSearchState = {
 };
 
 const STORAGE_KEY = "market.itemSearch";
-const VALID_SORTS = new Set<ItemSort>(["gears", "sold", "listings", "name", "rarity"]);
+const VALID_SORTS = new Set<ItemSort>(["gears", "sold", "listings", "views", "name", "rarity"]);
 
 function load(): ItemSearchState {
     try {

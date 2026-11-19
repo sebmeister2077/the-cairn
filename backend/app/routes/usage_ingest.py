@@ -15,9 +15,12 @@ the cardinality of the ``metadata->>'path'`` index stays bounded.
 from __future__ import annotations
 
 import re
-from typing import Optional
+import threading
+import time
+from datetime import datetime, timezone
+from typing import Any, Optional, Tuple
 
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import APIRouter, Header, HTTPException, Request, Response
 
 from ..auth import _get_client_ip, _hash_ip, resolve_key_id
 from ..core import database as db, usage_events
@@ -518,4 +521,80 @@ async def record_promo_event(
         metadata=metadata,
         ip_hash=ip_hash,
     )
+
+
+# ---------------------------------------------------------------------------
+# Public per-item view counts (powers the Item Search "Most views" sort).
+#
+# Aggregating every ``page.view`` row for the item route is comparatively
+# slow, so the result is cached in-process here and the frontend caches it in
+# localStorage for a week. Only ``{itemId: views}`` is exposed — no actors,
+# IP hashes or timestamps.
+# ---------------------------------------------------------------------------
+
+_ITEM_VIEWS_PATH = "/market/items/:itemId"
+_ITEM_VIEWS_CACHE_TTL_SECONDS = 60 * 60
+_ITEM_VIEWS_MAX_PER_WINDOW = 30
+_ITEM_VIEWS_WINDOW_SECONDS = 60
+_ITEM_REF_RE = re.compile(r"^\d{1,12}$")
+
+_item_views_lock = threading.Lock()
+_item_views_cache: Optional[Tuple[float, Any]] = None
+
+
+def _query_item_views() -> dict:
+    with db.get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT metadata->>'ref' AS ref, COUNT(*)::int AS views
+                     FROM usage_events
+                    WHERE event_type = 'page.view'
+                      AND metadata->>'path' = %s
+                      AND metadata ? 'ref'
+                 GROUP BY metadata->>'ref'""",
+                (_ITEM_VIEWS_PATH,),
+            )
+            rows = cur.fetchall()
+    views: dict = {}
+    for ref, count in rows:
+        # Refs are client-supplied; keep only numeric item ids.
+        if isinstance(ref, str) and _ITEM_REF_RE.match(ref):
+            views[ref] = int(count)
+    return {
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "views": views,
+    }
+
+
+@router.get("/item-views")
+def item_views(request: Request, response: Response) -> dict:
+    """All-time page-view counts per market item.
+
+    Response shape::
+
+        {"generatedAt": "2026-11-19T07:44:55+00:00", "views": {"123": 42, ...}}
+
+    Items with no recorded views are omitted.
+    """
+    global _item_views_cache
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    ip_hash = _hash_ip(_get_client_ip(request))
+    check_scoped_rate_limit(
+        ip_hash,
+        "item-views",
+        _ITEM_VIEWS_MAX_PER_WINDOW,
+        _ITEM_VIEWS_WINDOW_SECONDS,
+    )
+
+    response.headers["Cache-Control"] = f"public, max-age={_ITEM_VIEWS_CACHE_TTL_SECONDS}"
+    # Serialise rebuilds so a burst of cold requests runs the aggregate once.
+    with _item_views_lock:
+        cached = _item_views_cache
+        if cached is not None and time.monotonic() - cached[0] < _ITEM_VIEWS_CACHE_TTL_SECONDS:
+            return cached[1]
+        payload = _query_item_views()
+        _item_views_cache = (time.monotonic(), payload)
+        return payload
 

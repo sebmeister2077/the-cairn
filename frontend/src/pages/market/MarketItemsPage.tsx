@@ -32,6 +32,7 @@ import {
   formatGears,
 } from "@/lib/market/auction";
 import { marketRarity, RARITY_LABELS, RARITY_COLORS, RARITY_RANK } from "@/lib/market/item-sources";
+import { useItemViews } from "@/lib/market/item-views";
 import { ItemThumb } from "@/components/market/ItemThumb";
 import type { Rarity } from "@/models/item-sources";
 import {
@@ -57,6 +58,7 @@ const SORT_LABELS: Record<SortKey, string> = {
   gears: "Gears traded",
   sold: "Units sold",
   listings: "Listings",
+  views: "Most views",
   name: "Name",
   rarity: "Rarity",
 };
@@ -76,7 +78,12 @@ interface SearchRow {
   rarity: Rarity | null;
 }
 
-function sortRows(rows: SearchRow[], key: SortKey, dir: "asc" | "desc"): SearchRow[] {
+function sortRows(
+  rows: SearchRow[],
+  key: SortKey,
+  dir: "asc" | "desc",
+  views?: Record<string, number>,
+): SearchRow[] {
   const sorted = [...rows];
   // Natural comparator is ascending (smallest / least-rare / A–Z first); "desc"
   // flips it so the biggest values lead — matching the Listings page convention.
@@ -94,6 +101,11 @@ function sortRows(rows: SearchRow[], key: SortKey, dir: "asc" | "desc"): SearchR
       case "listings":
         cmp = a.listings - b.listings || byName(a, b);
         break;
+      case "views": {
+        const v = (r: SearchRow) => views?.[r.itemId] ?? 0;
+        cmp = v(a) - v(b) || byName(a, b);
+        break;
+      }
       case "rarity": {
         // Items with no known rarity sort as the least rare.
         const rank = (r: SearchRow) => (r.rarity ? RARITY_RANK[r.rarity] : 0);
@@ -123,6 +135,10 @@ export function MarketItemsPage() {
   const recentItems = useAppSelector((s) => s.recentItems.items);
   const dispatch = useAppDispatch();
   const { q, category, customCategory, rarity, sort, sortDir } = search;
+  const sortByViews = sort === "views";
+  // Only fetched once the user picks "Most views" (then cached for a week).
+  const viewsQ = useItemViews({ enabled: sortByViews });
+  const views = viewsQ.data?.views;
   const fieldId = useId();
 
   // Master list: every catalog item, enriched with stats where we have them.
@@ -184,8 +200,8 @@ export function MarketItemsPage() {
         return false;
       return true;
     });
-    return sortRows(filtered, sort, sortDir);
-  }, [rows, q, category, customCategory, rarity, sort, sortDir]);
+    return sortRows(filtered, sort, sortDir, views);
+  }, [rows, q, category, customCategory, rarity, sort, sortDir, views]);
 
   const isPending = catalogQ.isPending || summaryQ.isPending;
   const isError = catalogQ.isError || summaryQ.isError;
@@ -390,6 +406,12 @@ export function MarketItemsPage() {
             Reset
           </Button>
           <p className="text-sm text-muted-foreground">
+            {sortByViews && viewsQ.isFetching && !views && (
+              <Spinner className="mr-1 inline size-3" />
+            )}
+            {sortByViews && viewsQ.isError && !views && (
+              <span className="mr-2 text-destructive">Couldn't load view counts.</span>
+            )}
             {results.length.toLocaleString()} match{results.length === 1 ? "" : "es"}
             {results.length > MAX_ROWS ? ` · showing ${MAX_ROWS}` : ""}
           </p>
@@ -408,6 +430,7 @@ export function MarketItemsPage() {
               <TableHead className="text-right">Units sold</TableHead>
               <TableHead className="text-right">Listings</TableHead>
               <TableHead className="text-right">Gears traded</TableHead>
+              {sortByViews && <TableHead className="text-right">Views</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -448,11 +471,17 @@ export function MarketItemsPage() {
                 <TableCell className="text-right tabular-nums">
                   {it.gearsTraded ? formatGears(it.gearsTraded) : "—"}
                 </TableCell>
+                {sortByViews && (
+                  <TableCell className="text-right tabular-nums">
+                    {num(views?.[it.itemId] ?? 0)}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
             {shown.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={sortByViews ? 9 : 8} className="text-center text-muted-foreground py-8">
                   No items match your search.
                 </TableCell>
               </TableRow>
