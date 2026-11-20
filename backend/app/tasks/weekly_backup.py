@@ -13,8 +13,10 @@ Naming convention:
   scheduled : ``backups/backup-YYYY-Www.db``
   manual    : ``backups/backup-YYYY-Www-manual-<unix_timestamp>.db``
 
-Both are gated by the ``weekly_backups`` feature flag — when off, the
-scheduler still ticks but neither creates nor deletes anything.
+Only the combined-.db snapshots (creation + retention) are gated by the
+``weekly_backups`` feature flag and the ``MAP_DATA_DISABLED`` kill-switch.
+All other categories (geojson, map-features, elk-walkable, upstream
+translocators) always run on their admin-configured cadence.
 """
 
 from __future__ import annotations
@@ -318,6 +320,16 @@ def cleanup_old_backups() -> dict:
     return {"deleted": len(to_delete)}
 
 
+def _combined_db_backups_enabled() -> bool:
+    if settings.MAP_DATA_DISABLED:
+        return False
+    try:
+        return ff.is_feature_enabled("weekly_backups")
+    except Exception:
+        logger.exception("weekly_backup: failed to read weekly_backups flag")
+        return False
+
+
 def run_now() -> dict:
     """Synchronous: snapshot if due + run cleanup. Returns a small report."""
     created = None
@@ -326,52 +338,62 @@ def run_now() -> dict:
     elk_created: Optional[str] = None
     mf_rapids_created: Optional[str] = None
     tops_tl_created: Optional[str] = None
-    if ff.is_feature_enabled("weekly_backups"):
+    cleanup = {"deleted": 0}
+    geojson_cleanup = {"deleted": 0}
+    mf_traders_cleanup = {"deleted": 0}
+    mf_rapids_cleanup = {"deleted": 0}
+    tops_tl_cleanup = {"deleted": 0}
+
+    # Only the combined map .db is gated by ``weekly_backups`` (and the
+    # MAP_DATA_DISABLED kill-switch). Every other category runs on its own
+    # admin-configured cadence from ``category_backup_schedule``.
+    if _combined_db_backups_enabled():
         try:
             created = create_scheduled_snapshot_if_due()
         except Exception:
             logger.exception("weekly_backup: snapshot failed")
         try:
-            geojson_created = create_scheduled_geojson_snapshots_if_due()
+            cleanup = cleanup_old_backups()
         except Exception:
-            logger.exception("weekly_backup: geojson snapshot failed")
-        try:
-            mf_traders_created = create_scheduled_map_features_traders_snapshot_if_due()
-        except Exception:
-            logger.exception("weekly_backup: map-features traders snapshot failed")
-        try:
-            elk_created = create_scheduled_elk_walkable_snapshot_if_due()
-        except Exception:
-            logger.exception("weekly_backup: elk-walkable snapshot failed")
-        try:
-            mf_rapids_created = create_scheduled_map_features_rapids_snapshot_if_due()
-        except Exception:
-            logger.exception("weekly_backup: map-features rapids snapshot failed")
-        try:
-            tops_tl_created = create_scheduled_tops_translocators_snapshot_if_due()
-        except Exception:
-            logger.exception("weekly_backup: upstream translocators snapshot failed")
-    cleanup = cleanup_old_backups() if ff.is_feature_enabled("weekly_backups") else {"deleted": 0}
-    geojson_cleanup = (
-        cleanup_old_geojson_backups()
-        if ff.is_feature_enabled("weekly_backups")
-        else {"deleted": 0}
-    )
-    mf_traders_cleanup = (
-        cleanup_old_map_features_traders_backups()
-        if ff.is_feature_enabled("weekly_backups")
-        else {"deleted": 0}
-    )
-    mf_rapids_cleanup = (
-        cleanup_old_map_features_rapids_backups()
-        if ff.is_feature_enabled("weekly_backups")
-        else {"deleted": 0}
-    )
-    tops_tl_cleanup = (
-        cleanup_old_tops_translocators_backups()
-        if ff.is_feature_enabled("weekly_backups")
-        else {"deleted": 0}
-    )
+            logger.exception("weekly_backup: combined .db cleanup failed")
+
+    try:
+        geojson_created = create_scheduled_geojson_snapshots_if_due()
+    except Exception:
+        logger.exception("weekly_backup: geojson snapshot failed")
+    try:
+        mf_traders_created = create_scheduled_map_features_traders_snapshot_if_due()
+    except Exception:
+        logger.exception("weekly_backup: map-features traders snapshot failed")
+    try:
+        elk_created = create_scheduled_elk_walkable_snapshot_if_due()
+    except Exception:
+        logger.exception("weekly_backup: elk-walkable snapshot failed")
+    try:
+        mf_rapids_created = create_scheduled_map_features_rapids_snapshot_if_due()
+    except Exception:
+        logger.exception("weekly_backup: map-features rapids snapshot failed")
+    try:
+        tops_tl_created = create_scheduled_tops_translocators_snapshot_if_due()
+    except Exception:
+        logger.exception("weekly_backup: upstream translocators snapshot failed")
+
+    try:
+        geojson_cleanup = cleanup_old_geojson_backups()
+    except Exception:
+        logger.exception("weekly_backup: geojson cleanup failed")
+    try:
+        mf_traders_cleanup = cleanup_old_map_features_traders_backups()
+    except Exception:
+        logger.exception("weekly_backup: map-features traders cleanup failed")
+    try:
+        mf_rapids_cleanup = cleanup_old_map_features_rapids_backups()
+    except Exception:
+        logger.exception("weekly_backup: map-features rapids cleanup failed")
+    try:
+        tops_tl_cleanup = cleanup_old_tops_translocators_backups()
+    except Exception:
+        logger.exception("weekly_backup: upstream translocators cleanup failed")
     return {
         "created": created,
         "cleanup": cleanup,
@@ -401,7 +423,9 @@ def _scheduled_run() -> None:
             if (
                 result.get("created")
                 or result["cleanup"]["deleted"]
+                or result.get("geojson_created")
                 or result.get("map_features_traders_created")
+                or result.get("elk_walkable_created")
                 or result.get("map_features_rapids_created")
                 or result.get("tops_translocators_created")
             ):

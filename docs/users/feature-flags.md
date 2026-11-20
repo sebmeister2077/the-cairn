@@ -175,7 +175,7 @@ default; flipping ON exposes the feature to the relevant audience.
 | `match_score` | Match-percentage scoring shown to admins on pending uploads. |
 | `region_overwrite` | Region-restricted contribution uploads (also requires per-key permission). |
 | `public_history` | All-time Recent Contributions grid for non-admins. Admins always see it (regardless of this flag) since previews are kept forever. |
-| `weekly_backups` | Weekly snapshot of `globalservermap.db`. The scheduler thread always runs; the flag controls whether snapshots are actually written. |
+| `weekly_backups` | Weekly snapshot of `globalservermap.db` only. The scheduler thread always runs; the flag controls whether combined-.db snapshots are written/trimmed. Other backup categories (traders, map-features, elk-walkable, rapids, TOPS translocators, landmarks/translocators geojson) ignore this flag and follow their own schedule. |
 | `per_contribution_revert` | Admin "Revert" button on approved contributions, within `REVERT_WINDOW_DAYS`. |
 | `backup_restore` | Admin restore-from-backup endpoint (additionally TOTP-gated). |
 | `landmark_additions_enabled` | **Default ON.** Non-admin `POST /api/landmarks` (add new landmark). When OFF, non-admin callers get HTTP `503` with `{"detail": {"code": "feature_disabled", ...}}`. Rename / edit-request flow is unaffected. Admins always bypass. |

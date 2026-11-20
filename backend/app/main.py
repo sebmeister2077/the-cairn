@@ -496,18 +496,19 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("Heavy compute poller failed to start (non-fatal): %s", exc)
 
-    # Phase 4a — start the weekly backup scheduler. The thread ticks even
-    # when the feature flag is off (it just no-ops); flipping the flag on
-    # therefore takes effect within one tick without a redeploy.
+    # Phase 4a — start the backup scheduler. Always runs (even with
+    # MAP_DATA_DISABLED) because the per-category backups (traders,
+    # map-features, elk-walkable, ...) don't depend on the map .db; only the
+    # combined-.db snapshot is gated by the ``weekly_backups`` flag and the
+    # kill-switch, checked on every tick.
     step_started = perf_counter()
     try:
-        if map_data_enabled:
-            from .tasks import weekly_backup
-            weekly_backup.start()
-            logger.info(
-                "Startup step weekly_backup scheduler started in %.3fs",
-                perf_counter() - step_started,
-            )
+        from .tasks import weekly_backup
+        weekly_backup.start()
+        logger.info(
+            "Startup step weekly_backup scheduler started in %.3fs",
+            perf_counter() - step_started,
+        )
     except Exception as exc:  # pragma: no cover
         logger.warning("Weekly backup scheduler failed to start (non-fatal): %s", exc)
 

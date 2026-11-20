@@ -126,7 +126,7 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
       {
         key: "weekly_backups",
         title: "Weekly backups",
-        help: "Snapshot the combined map .db once per ISO week.",
+        help: "Snapshot the combined map .db once per ISO week. Other backup categories ignore this flag.",
       },
       {
         key: "backup_restore",

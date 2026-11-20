@@ -129,7 +129,7 @@ Notable flags include:
 | `manual_translocators` | Manual typed-coordinate translocator entry |
 | `translocator_screenshot_contributions` | Screenshot → OCR translocator path |
 | `trader_claims_viewer` / `_manual` / `_authoritative` | Trader-claim overlay + entry |
-| `weekly_backups` | Scheduled snapshot creation/retention |
+| `weekly_backups` | Scheduled combined map `.db` snapshot creation/retention (other backup categories use their own schedule) |
 | `backup_restore` | Admin restore-from-backup workflow |
 | `heavy_compute_enabled` | Background validation/preview/match workers run |
 | `maintenance_mode` / `registration_enabled` | Operational kill switches |

@@ -148,6 +148,55 @@ def test_tops_tl_scheduled_created_when_due(monkeypatch):
     assert uploads[0][0] == key
 
 
+def _patch_run_now(monkeypatch, *, flag_on, map_data_disabled=False):
+    calls = []
+    monkeypatch.setattr(wb.ff, "is_feature_enabled", lambda key: flag_on)
+    monkeypatch.setattr(wb.settings, "MAP_DATA_DISABLED", map_data_disabled)
+    for name in (
+        "create_scheduled_snapshot_if_due",
+        "cleanup_old_backups",
+        "create_scheduled_geojson_snapshots_if_due",
+        "create_scheduled_map_features_traders_snapshot_if_due",
+        "create_scheduled_elk_walkable_snapshot_if_due",
+        "create_scheduled_map_features_rapids_snapshot_if_due",
+        "create_scheduled_tops_translocators_snapshot_if_due",
+        "cleanup_old_geojson_backups",
+        "cleanup_old_map_features_traders_backups",
+        "cleanup_old_map_features_rapids_backups",
+        "cleanup_old_tops_translocators_backups",
+    ):
+        monkeypatch.setattr(
+            wb, name, lambda name=name: calls.append(name) or (
+                {"deleted": 0} if name.startswith("cleanup") else None
+            ),
+        )
+    return calls
+
+
+def test_run_now_category_backups_ignore_weekly_backups_flag(monkeypatch):
+    calls = _patch_run_now(monkeypatch, flag_on=False)
+    wb.run_now()
+    assert "create_scheduled_snapshot_if_due" not in calls
+    assert "cleanup_old_backups" not in calls
+    for name in (
+        "create_scheduled_geojson_snapshots_if_due",
+        "create_scheduled_map_features_traders_snapshot_if_due",
+        "create_scheduled_elk_walkable_snapshot_if_due",
+        "create_scheduled_map_features_rapids_snapshot_if_due",
+        "create_scheduled_tops_translocators_snapshot_if_due",
+        "cleanup_old_map_features_traders_backups",
+    ):
+        assert name in calls
+
+
+@pytest.mark.parametrize("map_data_disabled,expected", [(False, True), (True, False)])
+def test_run_now_combined_db_respects_kill_switch(monkeypatch, map_data_disabled, expected):
+    calls = _patch_run_now(monkeypatch, flag_on=True, map_data_disabled=map_data_disabled)
+    wb.run_now()
+    assert ("create_scheduled_snapshot_if_due" in calls) is expected
+    assert "create_scheduled_map_features_traders_snapshot_if_due" in calls
+
+
 def test_tops_tl_scheduled_swallows_fetch_failure(monkeypatch):
     monkeypatch.setattr(wb, "_now_iso_week", lambda: (2026, 18))
     monkeypatch.setattr(wb, "get_backup_schedule", lambda: {"tops_translocators": "weekly"})

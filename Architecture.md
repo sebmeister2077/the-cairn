@@ -324,8 +324,9 @@ Capabilities: scheduled (ISO-week) + manual snapshots via R2 server-side copy;
 configurable retention (`BACKUP_KEEP_SCHEDULED` / `BACKUP_KEEP_MANUAL`);
 tokenized, TTL-limited **public share links** (`backup_download_links`);
 **TOTP-gated restore** that reports orphaned contributions; and a full audit
-trail. All backup activity respects the `weekly_backups` / `backup_restore`
-feature flags.
+trail. Only the combined map `.db` snapshots respect the `weekly_backups` /
+`backup_restore` feature flags (and the `MAP_DATA_DISABLED` kill-switch); the
+other categories run purely on their configured cadence.
 
 ---
 
