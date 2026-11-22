@@ -191,7 +191,6 @@ export function MarketOverviewTrendsChart({
     if (AUCTION_LIMIT_GAME_HOURS < minH || AUCTION_LIMIT_GAME_HOURS > maxH) return null;
     return formatGameDate(best.gameHours);
   }, [series]);
-  const whitelistLabel = "Y13 M10 D1";
 
   const fmt = (v: number) =>
     metric.pct ? `${(v * 100).toFixed(0)}%` : metric.gears ? formatGears(v) : v.toLocaleString();
@@ -349,7 +348,7 @@ export function MarketOverviewTrendsChart({
                 />
               )}
               <ReferenceLine
-                x={whitelistLabel}
+                x={"Y13 M10 D1"}
                 stroke="#ef4444"
                 strokeDasharray="5 4"
                 strokeWidth={2}
@@ -359,6 +358,20 @@ export function MarketOverviewTrendsChart({
                   position: "insideTopRight",
                   fontSize: 10,
                   fill: "#ef4444",
+                }}
+              />
+              {/* some kind of green line for whitelist removed */}
+              <ReferenceLine
+                x={"Y20 M2 D1"}
+                stroke="#22c55e"
+                strokeDasharray="5 4"
+                strokeWidth={2}
+                ifOverflow="extendDomain"
+                label={{
+                  value: "Whitelist removed",
+                  position: "insideTopRight",
+                  fontSize: 10,
+                  fill: "#22c55e",
                 }}
               />
               <Line
