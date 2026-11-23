@@ -362,7 +362,7 @@ export function MarketOverviewTrendsChart({
               />
               {/* some kind of green line for whitelist removed */}
               <ReferenceLine
-                x={"Y20 M2 D1"}
+                x={"Y20 M1 D1"}
                 stroke="#22c55e"
                 strokeDasharray="5 4"
                 strokeWidth={2}
