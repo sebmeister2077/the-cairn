@@ -7,6 +7,7 @@ import { adminUsage, type PromoAction, type UsageGranularity } from "@/lib/helpe
 import { StatCard } from "@/components/usage/StatCard";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
 import { useAppSelector } from "@/store/hooks";
+import { cn } from "@/lib/helpers/utils";
 
 const ACTION_LABELS: Record<PromoAction, string> = {
   impression: "Impressions",
@@ -108,11 +109,13 @@ export function PromoSection(props: { from: string; to: string; granularity: Usa
           <button
             type="button"
             onClick={() => setPromoId(null)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              promoId == null
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-foreground border-border hover:bg-accent"
-            }`}
+            className={cn(
+              `text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer`,
+              {
+                "bg-primary text-primary-foreground border-primary": promoId == null,
+                "bg-background text-foreground border-border hover:bg-accent": promoId != null,
+              },
+            )}
           >
             All promos
           </button>
@@ -121,11 +124,13 @@ export function PromoSection(props: { from: string; to: string; granularity: Usa
               key={pid}
               type="button"
               onClick={() => setPromoId(pid)}
-              className={`text-xs px-2.5 py-1 rounded-full border font-mono transition-colors ${
-                promoId === pid
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-foreground border-border hover:bg-accent"
-              }`}
+              className={cn(
+                `text-xs px-2.5 py-1 rounded-full border font-mono transition-colors cursor-pointer`,
+                {
+                  "bg-primary text-primary-foreground border-primary": promoId === pid,
+                  "bg-background text-foreground border-border hover:bg-accent": promoId !== pid,
+                },
+              )}
             >
               {pid}
             </button>

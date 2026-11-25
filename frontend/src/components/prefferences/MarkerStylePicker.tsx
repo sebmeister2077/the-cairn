@@ -94,7 +94,7 @@ function OptionButton({
       title={hint}
       aria-pressed={selected}
       className={cn(
-        "group flex flex-col items-center gap-1 rounded-md border bg-card p-2 text-xs transition-colors",
+        "group flex flex-col items-center gap-1 rounded-md border bg-card p-2 text-xs transition-colors cursor-pointer",
         "hover:border-primary/60 hover:bg-accent",
         selected ? "border-primary ring-2 ring-primary/40" : "border-border",
       )}
