@@ -252,7 +252,6 @@ export function PromoSection(props: { from: string; to: string; granularity: Usa
                 <th className="px-3 py-2">Action</th>
                 <th className="px-3 py-2">Details</th>
                 <th className="px-3 py-2">Visitor</th>
-                <th className="px-3 py-2">Visitor</th>
                 {promoId == null && <th className="px-3 py-2">Promo</th>}
               </tr>
             </thead>
