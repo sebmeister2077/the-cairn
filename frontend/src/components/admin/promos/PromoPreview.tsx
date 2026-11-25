@@ -90,15 +90,15 @@ export function PromoPreview({
               {content.registration ? (
                 <li className="flex items-start gap-2">
                   <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  <span>
+                  <div>
                     <span className="font-medium text-foreground">Register &amp; rules: </span>
-                    {content.registration}{" "}
+                    <div className="whitespace-pre-wrap">{content.registration}</div>{" "}
                     {content.mapUrl ? (
                       <span className="font-medium text-primary underline underline-offset-2">
                         Show on map
                       </span>
                     ) : null}
-                  </span>
+                  </div>
                 </li>
               ) : null}
               {content.prize ? (
