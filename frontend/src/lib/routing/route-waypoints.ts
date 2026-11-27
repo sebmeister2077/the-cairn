@@ -23,6 +23,7 @@ export interface WaypointContext {
      *  in practice since chain entries are only emitted for TL hops). */
     linked_x: number;
     linked_z: number;
+    linked_y: number;
     next_x: number | "";
     next_z: number | "";
     prev_x: number | "";
@@ -53,6 +54,7 @@ export interface RouteWaypoint {
     y: number;
     linked_x: number;
     linked_z: number;
+    linked_y: number;
 }
 
 /** Collapse a route into the chain of unique waypoints worth dropping in
@@ -82,6 +84,7 @@ export function routeWaypointChain(route: RouteResult): RouteWaypoint[] {
             y: fromY,
             linked_x: leg.to.x,
             linked_z: leg.to.z,
+            linked_y: toY,
         };
         const last = chain[chain.length - 1];
         if (!last || last.x !== entry.x || last.z !== entry.z) {
@@ -97,6 +100,7 @@ export function routeWaypointChain(route: RouteResult): RouteWaypoint[] {
             y: toY,
             linked_x: leg.from.x,
             linked_z: leg.from.z,
+            linked_y: fromY,
         };
         const prev = chain[chain.length - 1];
         if (prev.x !== exit.x || prev.z !== exit.z) {

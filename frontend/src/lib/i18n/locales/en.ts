@@ -1297,6 +1297,7 @@ export const en = {
         placeholderFixedY: "{token} TL Y",
         placeholderLinkedX: "{token} linked TL X",
         placeholderLinkedZ: "{token} linked TL Z",
+        placeholderLinkedY: "{token} linked TL Y",
         placeholderNextX: "{token} next X",
         placeholderNextZ: "{token} next Z",
         placeholderPrevX: "{token} prev X",

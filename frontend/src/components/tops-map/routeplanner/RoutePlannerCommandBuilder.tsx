@@ -60,6 +60,7 @@ function buildRouteWaypointCommands(route: RouteResult, color: string, template:
         z: p.z,
         linked_x: p.linked_x,
         linked_z: p.linked_z,
+        linked_y: p.linked_y,
         next_x: next ? next.x : "",
         next_z: next ? next.z : "",
         prev_x: prev ? prev.x : "",
@@ -214,6 +215,7 @@ export function RoutePlannerCommandBuilder({
             <li>{t("routePlanner.placeholderFixedY", { token: "{y}" })}</li>
             <li>{t("routePlanner.placeholderLinkedX", { token: "{linked_x}" })}</li>
             <li>{t("routePlanner.placeholderLinkedZ", { token: "{linked_z}" })}</li>
+            <li>{t("routePlanner.placeholderLinkedY", { token: "{linked_y}" })}</li>
             <li>{t("routePlanner.placeholderNextX", { token: "{next_x}" })}</li>
             <li>{t("routePlanner.placeholderNextZ", { token: "{next_z}" })}</li>
             <li>{t("routePlanner.placeholderPrevX", { token: "{prev_x}" })}</li>
