@@ -538,6 +538,7 @@ export function RoutePlannerPanel() {
       z: first.z,
       linked_x: first.linked_x,
       linked_z: first.linked_z,
+      linked_y: first.linked_y,
       next_x: next ? next.x : "",
       next_z: next ? next.z : "",
       prev_x: "",
