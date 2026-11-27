@@ -179,7 +179,7 @@ export interface ProjectedPointMarker {
   x: number;
   y: number;
   label?: string;
-  kind?: string;
+  kind?: WorldPointMarker["kind"];
   color?: string;
   tooltip?: PointTooltip;
   claimed?: boolean;
@@ -1364,7 +1364,14 @@ export function MapViewer({
       ctx.lineCap = "round";
       for (const pt of projectedOverlayPoints) {
         if (pt.kind === "BrokenTLCluster") {
-          drawRapidsCluster(ctx, pt.x, pt.y, zoom, pt.clusterCount ?? 0, pt.color ?? "rgba(220, 38, 38, 0.95)");
+          drawRapidsCluster(
+            ctx,
+            pt.x,
+            pt.y,
+            zoom,
+            pt.clusterCount ?? 0,
+            pt.color ?? "rgba(220, 38, 38, 0.95)",
+          );
           continue;
         }
         if (pt.kind !== "BrokenTL") continue;
@@ -2045,7 +2052,7 @@ export function MapViewer({
           const pxThreshold = 14 / Math.max(zoomRef.current, 0.1);
           const pxThresholdSq = pxThreshold * pxThreshold;
           let bestTip: PointTooltip | null = null;
-          let bestKind: string | undefined;
+          let bestKind: WorldPointMarker["kind"] | undefined;
           let bestClaimed: boolean | undefined;
           let bestDistSq = Infinity;
           for (const pt of projectedOverlayPoints) {

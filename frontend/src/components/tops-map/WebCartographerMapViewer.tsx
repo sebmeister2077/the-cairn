@@ -14,6 +14,8 @@ import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
 import { drawClaimDot, drawEmptyClaimMarker } from "@/lib/tops-map-view/markerStyles";
 import { useTranslation } from "@/lib/i18n";
+import { copyTextToClipboard } from "@/lib/component-helpers/copyToClipboard";
+import { toast } from "@/lib/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   TRADER_TYPES,
@@ -2251,7 +2253,7 @@ export function WebCartographerMapViewer({
         const threshold = 14;
         const thresholdSq = threshold * threshold;
         let bestTip: PointTooltip | null = null;
-        let bestKind: string | undefined;
+        let bestKind: WorldPointMarker["kind"] | undefined;
         let bestClaimed: boolean | undefined;
         let bestDistSq = Infinity;
         for (const p of projectedPoints) {
@@ -2435,6 +2437,35 @@ export function WebCartographerMapViewer({
           return;
         }
       }
+      // Single broken-TL marker: copy a `/waypoint addati` command for it.
+      // Uses the same nearest-tooltip-marker rule as hover, so the click acts
+      // on whichever marker's tooltip is currently showing.
+      {
+        const pointThreshSq = 14 * 14;
+        let hit: ProjectedPointMarker | null = null;
+        let bestSq = Infinity;
+        for (const p of projectedPoints) {
+          if (!p.tooltip) continue;
+          const ddx = sx - p.x;
+          const ddy = sy - p.y;
+          const dsq = ddx * ddx + ddy * ddy;
+          if (dsq < pointThreshSq && dsq < bestSq) {
+            bestSq = dsq;
+            hit = p;
+          }
+        }
+        if (hit?.kind === "BrokenTL" && hit.tooltip) {
+          const x = Math.floor(hit.tooltip.x);
+          const y = Math.floor(hit.tooltip.y);
+          const z = Math.floor(hit.tooltip.z);
+          const cmd = `/waypoint addati spiral ${x} ${y} ${z} false red Broken TL at (${x}, ${y}, ${z})`;
+          copyTextToClipboard(cmd).then(
+            () => toast.success(t("topsMap.brokenTLWaypointCopied"), cmd),
+            () => toast.error(t("topsMap.copyToClipboardFailed")),
+          );
+          return;
+        }
+      }
       // Trader-claim marking: a click on a claim dot opens the type picker;
       // a click elsewhere dismisses an open picker. Only users who can
       // contribute (or admins) may open the picker at all.
@@ -2472,6 +2503,7 @@ export function WebCartographerMapViewer({
       unprojectScreen,
       claimMarkingEnabled,
       projectedPoints,
+      t,
     ],
   );
 

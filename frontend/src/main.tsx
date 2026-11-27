@@ -4,6 +4,7 @@ import "./index.css";
 import App from "./App.tsx";
 import { I18nProvider } from "./lib/i18n";
 import { ThemeProvider } from "./components/prefferences/ThemeProvider.tsx";
+import { Toaster } from "./components/ui/toast.tsx";
 import { setPrototypes } from "./lib/helpers/prototypes.ts";
 import { store } from "./store";
 
@@ -16,6 +17,7 @@ createRoot(document.getElementById("root")!).render(
     <I18nProvider>
       <ThemeProvider>
         <App />
+        <Toaster />
       </ThemeProvider>
     </I18nProvider>
   </Provider>,

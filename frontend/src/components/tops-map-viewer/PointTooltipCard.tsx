@@ -1,18 +1,19 @@
-import type { PointTooltip } from "@/components/tops-map-viewer/MapViewer";
+import type { PointTooltip, WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
 
 /** Hover tooltip state shared by both map viewers. `left`/`top` are
  *  container-relative pixel coordinates of the cursor. */
 export interface HoveredPointTooltip extends PointTooltip {
   left: number;
   top: number;
-  kind?: string;
+  kind?: WorldPointMarker["kind"];
   claimed?: boolean;
 }
 
 function headingFor(tip: HoveredPointTooltip): string {
   if (tip.title) return tip.title;
   if (tip.kind === "Rapids") return tip.claimed ? "Rapids · claimed" : "Rapids · unclaimed";
-  return "Broken TL";
+  if (tip.kind === "BrokenTL") return "Broken TL";
+  return "Unknown";
 }
 
 function headingClass(tip: HoveredPointTooltip): string {
