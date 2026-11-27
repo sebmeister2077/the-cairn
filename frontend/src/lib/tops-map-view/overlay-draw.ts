@@ -247,6 +247,7 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
         p.kind === "Home" ||
         p.kind === "Terminus" ||
         p.kind === "BrokenTL" ||
+        p.kind === "BrokenTLCluster" ||
         p.kind === "Rapids" ||
         p.kind === "RapidsCluster"
       )
@@ -333,6 +334,10 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     for (const p of points) {
+      if (p.kind === "BrokenTLCluster") {
+        drawRapidsCluster(ctx, p.x, p.y, 1, p.clusterCount ?? 0, p.color ?? "rgba(220, 38, 38, 0.95)");
+        continue;
+      }
       if (p.kind !== "BrokenTL") continue;
       ctx.beginPath();
       ctx.arc(p.x, p.y, tlOuter, 0, Math.PI * 2);

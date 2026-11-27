@@ -62,7 +62,7 @@ export function filterRapids(
 
 // Cell indices stay within ±2^15 for any world we render, so pack (cx, cz)
 // into one number instead of building string keys.
-const packCell = (cx: number, cz: number) => (cx + 32768) * 65536 + (cz + 32768);
+export const packCell = (cx: number, cz: number) => (cx + 32768) * 65536 + (cz + 32768);
 
 export function buildRapidsClusterLevels(markers: ReadonlyArray<RapidMarker>): RapidsClusterLevel[] {
     return RAPIDS_CLUSTER_CELLS.map((cell) => {
@@ -105,7 +105,7 @@ export function buildRapidsClusterLevels(markers: ReadonlyArray<RapidMarker>): R
     });
 }
 
-function pickLevel(levels: RapidsClusterLevel[], pixelsPerBlock: number): RapidsClusterLevel {
+export function pickLevel<L extends { cell: number }>(levels: L[], pixelsPerBlock: number): L {
     for (const level of levels) {
         if (level.cell * pixelsPerBlock >= TARGET_CELL_PX) return level;
     }

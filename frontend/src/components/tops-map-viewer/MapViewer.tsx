@@ -143,6 +143,7 @@ export interface WorldPointMarker {
     | "Home"
     | "Terminus"
     | "BrokenTL"
+    | "BrokenTLCluster"
     | "Rapids"
     | "RapidsCluster";
   /** Optional fill color for `"Trader"` markers. Hex string (e.g. "#16a34a"). */
@@ -161,7 +162,8 @@ export interface WorldPointMarker {
   /** `"Rapids"`: seen in-game AND predicted (drawn with a badge).
    *  `"RapidsCluster"`: at least one member is confirmed. */
   confirmed?: boolean;
-  /** `"RapidsCluster"`: number of rapids collapsed into this marker. */
+  /** `"RapidsCluster"` / `"BrokenTLCluster"`: number of markers collapsed
+   *  into this one. */
   clusterCount?: number;
   /** `"user"` when this landmark was contributed by a player (backend
    *  stamps `origin: "user"` on the feature's properties), otherwise
@@ -1262,6 +1264,7 @@ export function MapViewer({
           pt.kind === "Home" ||
           pt.kind === "Terminus" ||
           pt.kind === "BrokenTL" ||
+          pt.kind === "BrokenTLCluster" ||
           pt.kind === "Rapids" ||
           pt.kind === "RapidsCluster"
         )
@@ -1360,6 +1363,10 @@ export function MapViewer({
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
       for (const pt of projectedOverlayPoints) {
+        if (pt.kind === "BrokenTLCluster") {
+          drawRapidsCluster(ctx, pt.x, pt.y, zoom, pt.clusterCount ?? 0, pt.color ?? "rgba(220, 38, 38, 0.95)");
+          continue;
+        }
         if (pt.kind !== "BrokenTL") continue;
         // Filled red disc.
         ctx.beginPath();

@@ -154,6 +154,7 @@ import {
   filterRapids,
   type RapidsViewport,
 } from "@/lib/tops-map-view/rapids-clusters";
+import { buildBrokenTLClusterLevels } from "@/lib/tops-map-view/broken-tl-clusters";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
 import { useTraderColors } from "@/hooks/useTraderColors";
 import { usePlayerClaims, buildPlayerClaimDensity } from "@/hooks/usePlayerClaims";
@@ -839,6 +840,14 @@ export function TOPSMapViewPage() {
   // layer is on). Deduped against the official traders in `landmarkPoints`.
   const recordedFeaturesQuery = useRecordedMapFeatures(recordedBrokenTLsVisible || showTraders);
   const recordedFeatures = recordedFeaturesQuery.data;
+  // Zoomed-out cluster levels for the broken-TL layer; only built while it's on.
+  const brokenTLClusterLevels = useMemo(
+    () =>
+      recordedBrokenTLsVisible && recordedFeatures
+        ? buildBrokenTLClusterLevels(recordedFeatures.brokenTLs)
+        : null,
+    [recordedBrokenTLsVisible, recordedFeatures],
+  );
 
   // Rapids (advanced-only, own toggle): recorded + generated, merged in the
   // hook. Filters apply here so toggling them never refetches, and the
@@ -1370,6 +1379,7 @@ export function TOPSMapViewPage() {
         traderTypeFilterSet,
         recordedBrokenTLsVisible,
         recordedFeatures,
+        brokenTLClusterLevels,
         rapidsVisible,
         rapidsMarkers,
         rapidsClusterLevels,
@@ -1392,6 +1402,7 @@ export function TOPSMapViewPage() {
       traderTypeFilterSet,
       recordedBrokenTLsVisible,
       recordedFeatures,
+      brokenTLClusterLevels,
       rapidsVisible,
       rapidsMarkers,
       rapidsClusterLevels,

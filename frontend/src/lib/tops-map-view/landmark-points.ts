@@ -9,6 +9,7 @@ import {
     type RapidsClusterLevel,
     type RapidsViewport,
 } from "@/lib/tops-map-view/rapids-clusters";
+import { selectBrokenTLMarkers, type BrokenTLClusterLevel } from "@/lib/tops-map-view/broken-tl-clusters";
 
 type ViewportBounds = RapidsViewport;
 
@@ -27,6 +28,8 @@ export interface BuildLandmarkPointsArgs {
     traderTypeFilterSet: Set<string>;
     recordedBrokenTLsVisible: boolean;
     recordedFeatures: RecordedMapFeatures | undefined;
+    /** Precomputed cluster levels for `recordedFeatures.brokenTLs`. */
+    brokenTLClusterLevels: BrokenTLClusterLevel[] | null;
     rapidsVisible: boolean;
     /** Rapids after the predicted/likelihood/claimed filters. */
     rapidsMarkers: RapidMarker[] | undefined;
@@ -57,6 +60,7 @@ export function buildLandmarkPoints({
     traderTypeFilterSet,
     recordedBrokenTLsVisible,
     recordedFeatures,
+    brokenTLClusterLevels,
     rapidsVisible,
     rapidsMarkers,
     rapidsClusterLevels,
@@ -209,28 +213,13 @@ export function buildLandmarkPoints({
             }
         }
     }
-    // Recorded broken-translocator overlay (advanced-only, own toggle). Broken
-    // TLs carry an X/Y/Z hover tooltip (relative X/Z + absolute Y).
+    // Recorded broken-translocator overlay (advanced-only, own toggle):
+    // viewport-culled and collapsed into count-sized clusters when many are in
+    // view (see broken-tl-clusters.ts). Broken TLs carry an X/Y/Z hover
+    // tooltip (relative X/Z + absolute Y).
     if (recordedBrokenTLsVisible && recordedFeatures) {
-        // Viewport culling for performance: only render broken TLs inside the
-        // current viewport, expanded by a margin so markers pop in slightly
-        // before they scroll into view. Until the first viewport is reported
-        // (bounds null) we render them all so visibility never depends on the
-        // debounced-bounds race; culling kicks in once bounds are known.
-        const b = brokenTLViewportBounds;
-        if (b) {
-            const marginX = (b.maxX - b.minX) * 0.25;
-            const marginZ = (b.maxZ - b.minZ) * 0.25;
-            const minX = b.minX - marginX;
-            const maxX = b.maxX + marginX;
-            const minZ = b.minZ - marginZ;
-            const maxZ = b.maxZ + marginZ;
-            for (const m of recordedFeatures.brokenTLs) {
-                if (m.x < minX || m.x > maxX || m.z < minZ || m.z > maxZ) continue;
-                base.push(m);
-            }
-        } else {
-            for (const m of recordedFeatures.brokenTLs) base.push(m);
+        for (const m of selectBrokenTLMarkers(recordedFeatures.brokenTLs, brokenTLClusterLevels, brokenTLViewportBounds)) {
+            base.push(m);
         }
     }
     // Rapids overlay (advanced-only, own toggle): viewport-culled, and

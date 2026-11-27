@@ -2409,13 +2409,13 @@ export function WebCartographerMapViewer({
         onWorldClick(Math.floor(world.x), Math.floor(world.z));
         return;
       }
-      // Rapids cluster: clicking zooms in on it so it splits apart.
+      // Rapids / broken-TL cluster: clicking zooms in on it so it splits apart.
       {
         const clusterThreshSq = 16 * 16;
         let hit: ProjectedPointMarker | null = null;
         let bestSq = Infinity;
         for (const p of projectedPoints) {
-          if (p.kind !== "RapidsCluster" || !p.tooltip) continue;
+          if ((p.kind !== "RapidsCluster" && p.kind !== "BrokenTLCluster") || !p.tooltip) continue;
           const ddx = sx - p.x;
           const ddy = sy - p.y;
           const dsq = ddx * ddx + ddy * ddy;
