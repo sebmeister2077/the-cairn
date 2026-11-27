@@ -31,6 +31,11 @@ import type {
     CropId,
 } from "@/lib/climate/types";
 import type { StabilityYSlice } from "@/lib/stability/types";
+import {
+    ELEVATION_Y_MAX,
+    RAPID_MIN_Y,
+    type ElevationMode,
+} from "@/lib/elevation/types";
 
 /** World sea level = the Y the climate rasters are baked at (anchorY in
  *  the export manifest). Default for the altitude readout = no adjustment. */
@@ -210,6 +215,13 @@ export interface MapViewState {
      * showAdvancedMapOptions}. Default OFF — opt-in.
      */
     showRapids: boolean;
+    /** Include predicted (generated-only) rapids in the Rapids overlay.
+     *  Recorded + confirmed rapids always show while Rapids is on. */
+    rapidsShowPredicted: boolean;
+    /** Hide predicted rapids whose existence likelihood is below this (0..1). */
+    rapidsMinLikelihood: number;
+    /** When false, rapids inside a player land claim are hidden. */
+    rapidsShowClaimed: boolean;
     /**
      * When true, render the static trader *claim* boxes (from the frontend
      * bundle, `map-features.traderclaims.json`) as small dots — white/grey
@@ -285,6 +297,19 @@ export interface MapViewState {
     stabilityYSlice: StabilityYSlice;
     /** Temporal-stability overlay opacity (0..1). */
     stabilityOpacity: number;
+    /**
+     * Terrain elevation overlay enable flag (Rapids Exporter height map).
+     * Part of the same one-raster-at-a-time group as climate, rock strata
+     * and stability. WebCartographer + advanced-options only.
+     */
+    elevationEnabled: boolean;
+    /** "relief" shows the shaded height map; "band" tints a Y range. */
+    elevationMode: ElevationMode;
+    /** Inclusive terrain-Y range highlighted in band mode. */
+    elevationBandMin: number;
+    elevationBandMax: number;
+    /** Elevation overlay opacity (0..1). */
+    elevationOpacity: number;
     /**
      * Auction House "trade density" heatmap overlay intensity (0..1).
      * Drives the overlay opacity via the Intensity slider in
@@ -413,6 +438,9 @@ export function loadInitialMapViewState(): MapViewState {
         showOceans: false,
         showRecordedBrokenTLs: false,
         showRapids: false,
+        rapidsShowPredicted: true,
+        rapidsMinLikelihood: 0.5,
+        rapidsShowClaimed: true,
         showTraderClaims: false,
         showPlayerClaims: false,
         playerClaimsMode: "density",
@@ -434,6 +462,11 @@ export function loadInitialMapViewState(): MapViewState {
         stabilityEnabled: false,
         stabilityYSlice: 110,
         stabilityOpacity: 0.7,
+        elevationEnabled: false,
+        elevationMode: "relief",
+        elevationBandMin: RAPID_MIN_Y,
+        elevationBandMax: ELEVATION_Y_MAX,
+        elevationOpacity: 0.7,
         auctionHeatmapOpacity: 0.75,
         showAdvancedMapOptions: true,
         isFullscreen: false,
@@ -538,6 +571,17 @@ export const mapViewSlice = createSlice({
         setShowRapids(state, action: PayloadAction<boolean>) {
             state.showRapids = action.payload;
         },
+        setRapidsShowPredicted(state, action: PayloadAction<boolean>) {
+            state.rapidsShowPredicted = action.payload;
+        },
+        setRapidsMinLikelihood(state, action: PayloadAction<number>) {
+            const v = action.payload;
+            if (!Number.isFinite(v)) return;
+            state.rapidsMinLikelihood = Math.max(0, Math.min(1, v));
+        },
+        setRapidsShowClaimed(state, action: PayloadAction<boolean>) {
+            state.rapidsShowClaimed = action.payload;
+        },
         setShowTraderClaims(state, action: PayloadAction<boolean>) {
             state.showTraderClaims = action.payload;
         },
@@ -562,6 +606,7 @@ export const mapViewSlice = createSlice({
             if (state.showRockStrata) {
                 state.climateSubToggle = "off";
                 state.stabilityEnabled = false;
+                state.elevationEnabled = false;
             }
         },
         setRockStrataKind(state, action: PayloadAction<"rock" | "geo">) {
@@ -586,6 +631,7 @@ export const mapViewSlice = createSlice({
             if (state.climateSubToggle !== "off") {
                 state.showRockStrata = false;
                 state.stabilityEnabled = false;
+                state.elevationEnabled = false;
             }
             // Switching away from Temperature clears any temp-only preset so
             // the next activation starts on a clean raster.
@@ -662,6 +708,7 @@ export const mapViewSlice = createSlice({
             if (state.stabilityEnabled) {
                 state.climateSubToggle = "off";
                 state.showRockStrata = false;
+                state.elevationEnabled = false;
             }
         },
         setStabilityYSlice(state, action: PayloadAction<StabilityYSlice>) {
@@ -671,6 +718,31 @@ export const mapViewSlice = createSlice({
             const v = action.payload;
             if (!Number.isFinite(v)) return;
             state.stabilityOpacity = Math.max(0, Math.min(1, v));
+        },
+        setElevationEnabled(state, action: PayloadAction<boolean>) {
+            state.elevationEnabled = action.payload;
+            // Mutually exclusive with the climate, rock-strata + stability overlays.
+            if (state.elevationEnabled) {
+                state.climateSubToggle = "off";
+                state.showRockStrata = false;
+                state.stabilityEnabled = false;
+            }
+        },
+        setElevationMode(state, action: PayloadAction<ElevationMode>) {
+            state.elevationMode = action.payload;
+        },
+        setElevationBand(state, action: PayloadAction<{ min: number; max: number }>) {
+            const { min, max } = action.payload;
+            if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+            const lo = Math.max(0, Math.min(ELEVATION_Y_MAX, Math.round(Math.min(min, max))));
+            const hi = Math.max(0, Math.min(ELEVATION_Y_MAX, Math.round(Math.max(min, max))));
+            state.elevationBandMin = lo;
+            state.elevationBandMax = hi;
+        },
+        setElevationOpacity(state, action: PayloadAction<number>) {
+            const v = action.payload;
+            if (!Number.isFinite(v)) return;
+            state.elevationOpacity = Math.max(0, Math.min(1, v));
         },
         setAuctionHeatmapOpacity(state, action: PayloadAction<number>) {
             const v = action.payload;
@@ -794,6 +866,9 @@ export const {
     setShowOceans,
     setShowRecordedBrokenTLs,
     setShowRapids,
+    setRapidsShowPredicted,
+    setRapidsMinLikelihood,
+    setRapidsShowClaimed,
     setShowTraderClaims,
     setShowPlayerClaims,
     setPlayerClaimsMode,
@@ -815,6 +890,10 @@ export const {
     setStabilityEnabled,
     setStabilityYSlice,
     setStabilityOpacity,
+    setElevationEnabled,
+    setElevationMode,
+    setElevationBand,
+    setElevationOpacity,
     setAuctionHeatmapOpacity,
     setShowAdvancedMapOptions,
     setShowFullscreen,

@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { CollapsibleSection } from "@/components/tops-map/CollapsibleSection";
 import { PlayerClaimsControl } from "@/components/tops-map/PlayerClaimsControl";
+import { RapidsControl } from "@/components/tops-map/RapidsControl";
 import {
   AuctionHeatmapControl,
   type AuctionLayer,
@@ -12,10 +13,14 @@ import { RockStrataLegendPanel } from "@/components/tops-map/RockStrataLegendPan
 import { ClimateControlsPanel } from "@/components/tops-map/ClimateControlsPanel";
 import { ClimateHoverReadout } from "@/components/tops-map/ClimateHoverReadout";
 import { TemporalStabilityPanel } from "@/components/tops-map/TemporalStabilityPanel";
+import { ElevationPanel } from "@/components/tops-map/ElevationPanel";
+import { ElevationHoverReadout } from "@/components/tops-map/ElevationHoverReadout";
 import { OCEANS_TOTAL_COUNT } from "@/components/tops-map/FullScreenOverlay";
 import type { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
 import type { ClimateSampleResult, useClimateOverlay } from "@/hooks/useClimateOverlay";
 import type { useTemporalStabilityOverlay } from "@/hooks/useTemporalStabilityOverlay";
+import type { useElevationOverlay } from "@/hooks/useElevationOverlay";
+import type { ElevationSample } from "@/lib/elevation/types";
 import { useTranslation } from "@/lib/i18n";
 
 interface AdvancedLayersSectionProps {
@@ -27,9 +32,6 @@ interface AdvancedLayersSectionProps {
   recordedBrokenTLsCount: number;
   /** Only registered account holders (not API-key-only users) see the broken TL toggle. */
   hasAccount: boolean;
-  showRapids: boolean;
-  setShowRapids: (next: boolean) => void;
-  rapidsCount: number;
   showTraderClaims: boolean;
   setShowTraderClaims: (next: boolean) => void;
   traderClaimsCount: number;
@@ -63,6 +65,11 @@ interface AdvancedLayersSectionProps {
   stabilitySliceMeta: ReturnType<typeof useTemporalStabilityOverlay>["sliceMeta"];
   stabilityStatus: ReturnType<typeof useTemporalStabilityOverlay>["status"];
   stabilityError: ReturnType<typeof useTemporalStabilityOverlay>["error"];
+  elevationStatus: ReturnType<typeof useElevationOverlay>["status"];
+  elevationError: ReturnType<typeof useElevationOverlay>["error"];
+  elevationVisible: boolean;
+  elevationHoverCoords: { x: number; z: number } | null;
+  elevationHoverSample: ElevationSample | null;
 }
 
 /** Advanced-only overlay controls (oceans, broken TLs, rapids, claims,
@@ -75,9 +82,6 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
   setShowRecordedBrokenTLs,
   recordedBrokenTLsCount,
   hasAccount,
-  showRapids,
-  setShowRapids,
-  rapidsCount,
   showTraderClaims,
   setShowTraderClaims,
   traderClaimsCount,
@@ -111,6 +115,11 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
   stabilitySliceMeta,
   stabilityStatus,
   stabilityError,
+  elevationStatus,
+  elevationError,
+  elevationVisible,
+  elevationHoverCoords,
+  elevationHoverSample,
 }: AdvancedLayersSectionProps) {
   const { t } = useTranslation();
   return (
@@ -163,6 +172,7 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
           error={stabilityError}
         />
       )}
+      {usingWebCartographer && <ElevationPanel status={elevationStatus} error={elevationError} />}
       {climateVisible && (
         <ClimateHoverReadout
           hoverCoords={climateHoverCoords}
@@ -170,6 +180,9 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
           visible={climateVisible}
           altitudeY={climateAltitudeY}
         />
+      )}
+      {usingWebCartographer && elevationVisible && (
+        <ElevationHoverReadout hoverCoords={elevationHoverCoords} sample={elevationHoverSample} />
       )}
       <AuctionHeatmapControl
         layer={auctionLayer}
@@ -193,20 +206,7 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
           </span>
         </div>
       )}
-      {showAdvancedMapOptions && (
-        <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-          <Switch
-            checked={showRapids}
-            onCheckedChange={setShowRapids}
-            aria-label={t("topsMap.showRapidsOverlay")}
-          />
-          <Label>{t("topsMap.showRapids")}</Label>
-          <span className="text-xs text-muted-foreground ml-2">
-            {t("topsMap.rapidsFound")}{" "}
-            <span className="font-medium text-foreground">{rapidsCount.toLocaleString()}</span>
-          </span>
-        </div>
-      )}
+      {showAdvancedMapOptions && <RapidsControl />}
       {showAdvancedMapOptions && (
         <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
           <Switch

@@ -1354,6 +1354,7 @@ _MAP_LAYER_IDS = [
     "rock_strata",
     "climate",
     "temporal_stability",
+    "elevation",
     "auction_heatmap",
 ]
 

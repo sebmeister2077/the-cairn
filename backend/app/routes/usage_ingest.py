@@ -82,6 +82,7 @@ _LAYER_IDS = frozenset(
         "rock_strata",
         "climate",
         "temporal_stability",
+        "elevation",
         "auction_heatmap",
     }
 )

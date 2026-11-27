@@ -28,6 +28,7 @@ export type LayerId =
     | "rock_strata"
     | "climate"
     | "temporal_stability"
+    | "elevation"
     | "auction_heatmap";
 
 export const LAYER_IDS: LayerId[] = [
@@ -39,6 +40,7 @@ export const LAYER_IDS: LayerId[] = [
     "rock_strata",
     "climate",
     "temporal_stability",
+    "elevation",
     "auction_heatmap",
 ];
 

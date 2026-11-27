@@ -41,6 +41,17 @@ import {
     isTraderStyle,
 } from "@/lib/tops-map-view/markerStyles";
 import { sanitizeTraderColors } from "@/lib/tops-map-view/trader-types";
+import { ELEVATION_Y_MAX, RAPID_MIN_Y } from "@/lib/elevation/types";
+
+function clampUnit(v: unknown, fallback: number): number {
+    return typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : fallback;
+}
+
+function clampHeight(v: unknown, fallback: number): number {
+    return typeof v === "number" && Number.isFinite(v)
+        ? Math.max(0, Math.min(ELEVATION_Y_MAX, Math.round(v)))
+        : fallback;
+}
 
 export const PERSIST_KEY = "vsw:state:v1";
 const ENVELOPE_VERSION = 1;
@@ -155,6 +166,11 @@ const NORMALIZE_ON_READ: {
                 : DEFAULT_RAPIDS_STYLE,
             // Drop malformed/unknown trader-color overrides.
             traderColors: sanitizeTraderColors(merged.traderColors),
+            rapidsMinLikelihood: clampUnit(merged.rapidsMinLikelihood, 0.5),
+            elevationMode: merged.elevationMode === "band" ? "band" : "relief",
+            elevationBandMin: clampHeight(merged.elevationBandMin, RAPID_MIN_Y),
+            elevationBandMax: clampHeight(merged.elevationBandMax, ELEVATION_Y_MAX),
+            elevationOpacity: clampUnit(merged.elevationOpacity, 0.7),
         };
     },
     // Same defensive merge for the admin Usage filters slice: the `pages`

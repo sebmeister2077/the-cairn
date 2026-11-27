@@ -36,7 +36,6 @@ import {
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
-  setShowRapids as setShowRapidsAction,
   setShowTraderClaims as setShowTraderClaimsAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKind as setRockStrataKindAction,
@@ -143,11 +142,18 @@ import { ClimateHoverReadout } from "@/components/tops-map/ClimateHoverReadout";
 import { useClimateOverlay } from "@/hooks/useClimateOverlay";
 import { TemporalStabilityOverlayLayer } from "@/components/tops-map/TemporalStabilityOverlayLayer";
 import { useTemporalStabilityOverlay } from "@/hooks/useTemporalStabilityOverlay";
+import { useElevationOverlay } from "@/hooks/useElevationOverlay";
+import { ElevationHoverReadout } from "@/components/tops-map/ElevationHoverReadout";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import { useRapidsOverlay } from "@/hooks/useRapidsOverlay";
+import {
+  buildRapidsClusterLevels,
+  filterRapids,
+  type RapidsViewport,
+} from "@/lib/tops-map-view/rapids-clusters";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
 import { useTraderColors } from "@/hooks/useTraderColors";
 import { usePlayerClaims, buildPlayerClaimDensity } from "@/hooks/usePlayerClaims";
@@ -372,14 +378,10 @@ export function TOPSMapViewPage() {
   );
   const recordedBrokenTLsVisible = showRecordedBrokenTLs && showAdvancedMapOptions;
 
-  // Recorded rapids sources — advanced-only opt-in point layer, coloured by
-  // claimed state. The (potentially large) asset only loads once the toggle
-  // is on (see `useRapidsOverlay`).
+  // Rapids (recorded + generated) — advanced-only opt-in point layer,
+  // coloured by claimed state. The assets only load once the toggle is on
+  // (see `useRapidsOverlay`); the toggle itself lives in `RapidsControl`.
   const showRapids = useAppSelector((s) => s.mapView.showRapids);
-  const setShowRapids = useCallback(
-    (next: boolean) => dispatch(setShowRapidsAction(next)),
-    [dispatch],
-  );
   const rapidsVisible = showRapids && showAdvancedMapOptions;
   // "All trader claims" overlay: the full static claim-box set, coloured by
   // any assigned type. Advanced-only opt-in; the (large) asset + the type
@@ -403,18 +405,10 @@ export function TOPSMapViewPage() {
   // already-debounced `onViewportChange`. `viewportBoundsRef` mirrors the
   // latest bounds without a re-render so we can seed the state when the layer
   // is toggled on without an intervening pan.
-  const viewportBoundsRef = useRef<{
-    minX: number;
-    maxX: number;
-    minZ: number;
-    maxZ: number;
-  } | null>(null);
-  const [brokenTLViewportBounds, setBrokenTLViewportBounds] = useState<{
-    minX: number;
-    maxX: number;
-    minZ: number;
-    maxZ: number;
-  } | null>(null);
+  const viewportBoundsRef = useRef<RapidsViewport | null>(null);
+  const [brokenTLViewportBounds, setBrokenTLViewportBounds] = useState<RapidsViewport | null>(
+    null,
+  );
   // Seed / clear the culling bounds when the broken-TL layer toggles on.
   useEffect(() => {
     if (recordedBrokenTLsVisible && viewportBoundsRef.current) {
@@ -539,6 +533,28 @@ export function TOPSMapViewPage() {
     enabled: stabilityVisible,
     ySlice: stabilityYSlice,
   });
+
+  // Terrain elevation overlay (WebCartographer-only, Rapids Exporter height
+  // map). Same one-raster-at-a-time group as climate/rock-strata/stability.
+  // Its hover readout reuses the cursor coords mirrored for climate.
+  const elevationEnabled = useAppSelector((s) => s.mapView.elevationEnabled);
+  const elevationMode = useAppSelector((s) => s.mapView.elevationMode);
+  const elevationBandMin = useAppSelector((s) => s.mapView.elevationBandMin);
+  const elevationBandMax = useAppSelector((s) => s.mapView.elevationBandMax);
+  const elevationOpacity = useAppSelector((s) => s.mapView.elevationOpacity);
+  const elevationVisible = elevationEnabled && showAdvancedMapOptions;
+  const elevationOverlay = useElevationOverlay({
+    enabled: elevationVisible,
+    mode: elevationMode,
+    bandMin: elevationBandMin,
+    bandMax: elevationBandMax,
+  });
+  const elevationSampleAt = elevationOverlay.sampleAt;
+  const elevationRawReady = elevationOverlay.rawReady;
+  const elevationHoverSample = useMemo(() => {
+    if (!elevationVisible || !climateHoverCoords || !elevationRawReady) return null;
+    return elevationSampleAt(climateHoverCoords.x, climateHoverCoords.z);
+  }, [elevationVisible, climateHoverCoords, elevationSampleAt, elevationRawReady]);
 
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
   // the map at viewport size with floating control panels.
@@ -824,9 +840,28 @@ export function TOPSMapViewPage() {
   const recordedFeaturesQuery = useRecordedMapFeatures(recordedBrokenTLsVisible || showTraders);
   const recordedFeatures = recordedFeaturesQuery.data;
 
-  // Recorded rapids sources (advanced-only, own toggle).
+  // Rapids (advanced-only, own toggle): recorded + generated, merged in the
+  // hook. Filters apply here so toggling them never refetches, and the
+  // zoomed-out cluster levels are rebuilt only when the filtered set changes.
   const rapidsQuery = useRapidsOverlay(rapidsVisible);
-  const rapidsMarkers = rapidsQuery.data;
+  const rapidsShowPredicted = useAppSelector((s) => s.mapView.rapidsShowPredicted);
+  const rapidsMinLikelihood = useAppSelector((s) => s.mapView.rapidsMinLikelihood);
+  const rapidsShowClaimed = useAppSelector((s) => s.mapView.rapidsShowClaimed);
+  const rapidsMarkers = useMemo(
+    () =>
+      rapidsQuery.data
+        ? filterRapids(rapidsQuery.data.markers, {
+            showPredicted: rapidsShowPredicted,
+            minLikelihood: rapidsMinLikelihood,
+            showClaimed: rapidsShowClaimed,
+          })
+        : undefined,
+    [rapidsQuery.data, rapidsShowPredicted, rapidsMinLikelihood, rapidsShowClaimed],
+  );
+  const rapidsClusterLevels = useMemo(
+    () => (rapidsMarkers ? buildRapidsClusterLevels(rapidsMarkers) : null),
+    [rapidsMarkers],
+  );
 
   // Favorite TL groupings (local-only). The groupings themselves persist via
   // `useTLGroupings`; view-mode + active-selection live in the Redux
@@ -1123,6 +1158,7 @@ export function TOPSMapViewPage() {
         maxX: info.worldMaxX,
         minZ: info.worldMinZ,
         maxZ: info.worldMaxZ,
+        pixelsPerBlock: info.pixelsPerBlock,
       };
       viewportBoundsRef.current = bounds;
       if (recordedBrokenTLsVisible || rapidsVisible) {
@@ -1336,6 +1372,7 @@ export function TOPSMapViewPage() {
         recordedFeatures,
         rapidsVisible,
         rapidsMarkers,
+        rapidsClusterLevels,
         claimList: traderClaimsQuery.data,
         claimTypeMap: traderClaimTypesQuery.data?.data,
         emptyClaimSet: traderClaimEmptyQuery.data?.data,
@@ -1357,6 +1394,7 @@ export function TOPSMapViewPage() {
       recordedFeatures,
       rapidsVisible,
       rapidsMarkers,
+      rapidsClusterLevels,
       traderClaimsQuery.data,
       traderClaimTypesQuery.data,
       traderClaimEmptyQuery.data,
@@ -2258,9 +2296,6 @@ export function TOPSMapViewPage() {
                 setShowRecordedBrokenTLs={setShowRecordedBrokenTLs}
                 recordedBrokenTLsCount={recordedFeatures?.brokenTLs.length ?? 0}
                 hasAccount={Boolean(accountMeQuery.data?.user)}
-                showRapids={showRapids}
-                setShowRapids={setShowRapids}
-                rapidsCount={rapidsMarkers?.length ?? 0}
                 showTraderClaims={showTraderClaims}
                 setShowTraderClaims={setShowTraderClaims}
                 traderClaimsCount={traderClaimsQuery.data?.length ?? 0}
@@ -2294,6 +2329,11 @@ export function TOPSMapViewPage() {
                 stabilitySliceMeta={stabilityOverlay.sliceMeta}
                 stabilityStatus={stabilityOverlay.status}
                 stabilityError={stabilityOverlay.error}
+                elevationStatus={elevationOverlay.status}
+                elevationError={elevationOverlay.error}
+                elevationVisible={elevationVisible}
+                elevationHoverCoords={elevationVisible ? climateHoverCoords : null}
+                elevationHoverSample={elevationHoverSample}
               />
             )}
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
@@ -2417,6 +2457,17 @@ export function TOPSMapViewPage() {
                         imageWidth={imgNatural.w}
                         imageHeight={imgNatural.h}
                         opacity={stabilityOpacity}
+                      />
+                    ) : null}
+                    {elevationVisible ? (
+                      <ClimateOverlayLayer
+                        bounds={elevationOverlay.overlayBounds}
+                        overlayUrl={elevationOverlay.overlayUrl}
+                        stats={wcStats}
+                        imageWidth={imgNatural.w}
+                        imageHeight={imgNatural.h}
+                        opacity={elevationOpacity}
+                        imageRendering={elevationMode === "relief" ? "auto" : "pixelated"}
                       />
                     ) : null}
                     {auctionActive && auctionSummary ? (
@@ -2631,6 +2682,13 @@ export function TOPSMapViewPage() {
               floating
             />
           )}
+          {isFullscreen && elevationVisible && usingWebCartographer && (
+            <ElevationHoverReadout
+              hoverCoords={climateHoverCoords}
+              sample={elevationHoverSample}
+              floating
+            />
+          )}
           {isFullscreen && isAdmin && !areaTool.active && (
             <button
               type="button"
@@ -2677,6 +2735,8 @@ export function TOPSMapViewPage() {
               stabilitySliceMeta={stabilityOverlay.sliceMeta}
               stabilityStatus={stabilityOverlay.status}
               stabilityError={stabilityOverlay.error}
+              elevationStatus={elevationOverlay.status}
+              elevationError={elevationOverlay.error}
             />
           )}
           <MapDrawingUi worldKey={effectiveWcUrl} />

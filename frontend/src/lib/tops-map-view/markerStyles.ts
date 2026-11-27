@@ -975,7 +975,8 @@ const RAPIDS_GLYPH = "rgba(255, 255, 255, 0.98)";
  * Rapids (fast-water source) marker. `color` encodes the claimed state
  * (teal = unclaimed, orange = claimed — see useRapidsOverlay); when `claimed`
  * is true a halo ring is added so ownership reads at a glance regardless of
- * the chosen glyph.
+ * the chosen glyph. Predicted rapids with `likelihood < 1` are drawn faded,
+ * and `confirmed` rapids (predicted AND seen in-game) get a small badge.
  */
 export function drawRapidsMarker(
     ctx: CanvasRenderingContext2D,
@@ -985,6 +986,94 @@ export function drawRapidsMarker(
     style: RapidsStyle,
     color: string,
     claimed = false,
+    likelihood = 1,
+    confirmed = false,
+) {
+    const faded = likelihood < 1;
+    if (faded) {
+        ctx.save();
+        ctx.globalAlpha *= 0.35 + 0.65 * Math.max(0, likelihood);
+    }
+    drawRapidsGlyph(ctx, x, y, zoom, style, color, claimed);
+    if (faded) ctx.restore();
+    if (confirmed) {
+        const { outer, stroke } = rapidsSize(zoom);
+        const r = Math.max(1.6, outer * 0.38);
+        ctx.beginPath();
+        ctx.arc(x + outer * 0.85, y - outer * 0.85, r, 0, Math.PI * 2);
+        ctx.fillStyle = RAPIDS_GLYPH;
+        ctx.fill();
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = stroke;
+        ctx.stroke();
+    }
+}
+
+/** Screen-px radius of a rapids cluster. Grows gently (log10) with the member
+ *  count — 2 → ~8, 100 → 13, 1000 → 16 — and is capped so dense regions
+ *  never balloon. */
+export function rapidsClusterRadius(count: number): number {
+    return Math.min(7 + 3 * Math.log10(Math.max(1, count)), 16);
+}
+
+function formatClusterCount(count: number): string {
+    if (count >= 10_000) return `${Math.round(count / 1000)}k`;
+    if (count >= 1000) return `${(count / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+    return String(count);
+}
+
+/**
+ * Several neighbouring rapids collapsed into one disc with a count label.
+ * Teal when any member is unclaimed, orange when all are claimed; a white
+ * ring marks clusters containing at least one confirmed (seen in-game) rapid.
+ */
+export function drawRapidsCluster(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    zoom: number,
+    count: number,
+    color: string,
+    confirmed = false,
+) {
+    const z = Math.max(zoom, 0.1);
+    const r = rapidsClusterRadius(count) / z;
+    const stroke = 1.2 / z;
+    if (confirmed) {
+        ctx.beginPath();
+        ctx.arc(x, y, r + 2.2 / z, 0, Math.PI * 2);
+        ctx.strokeStyle = RAPIDS_GLYPH;
+        ctx.lineWidth = 1.6 / z;
+        ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = stroke;
+    ctx.stroke();
+
+    const label = formatClusterCount(count);
+    const fontPx = (label.length >= 4 ? 8.5 : label.length === 3 ? 9.5 : 10.5) / z;
+    ctx.font = `700 ${fontPx}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 2.4 / z;
+    ctx.strokeStyle = "rgba(15, 23, 42, 0.75)";
+    ctx.strokeText(label, x, y + 0.5 / z);
+    ctx.fillStyle = RAPIDS_GLYPH;
+    ctx.fillText(label, x, y + 0.5 / z);
+}
+
+function drawRapidsGlyph(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    zoom: number,
+    style: RapidsStyle,
+    color: string,
+    claimed: boolean,
 ) {
     const { outer, stroke } = rapidsSize(zoom);
     ctx.lineJoin = "round";

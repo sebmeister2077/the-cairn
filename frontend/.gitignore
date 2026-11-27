@@ -34,3 +34,13 @@ src/assets/Auction/auctions.csv
 # 8000px PNGs). The tiny *.world.json + summary JSON stay tracked for georef.
 src/assets/Stability/**/*.png
 
+# Raw Rapids Exporter mod output (~150 MB). Never committed — run
+# tools/prepare-rapids-export/prepare_rapids_export.py to derive the compact
+# GeneratedRapids/ + Elevation/ assets from it.
+src/assets/RapidsAndElevation/
+
+# Elevation rasters are hosted on R2 like the stability slices; only the
+# *.world.json georef files stay tracked.
+src/assets/Elevation/**/*.webp
+src/assets/Elevation/**/*.png
+

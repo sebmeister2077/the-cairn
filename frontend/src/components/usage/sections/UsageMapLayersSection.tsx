@@ -57,6 +57,7 @@ const MAP_LAYER_LABELS: Record<string, string> = {
   rock_strata: "Rock strata",
   climate: "Climate",
   temporal_stability: "Temporal stability",
+  elevation: "Elevation",
   auction_heatmap: "Auction heatmap",
 };
 

@@ -2,14 +2,15 @@ import type { WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
 import type { TraderMarker, ClaimTypeMap, EmptyClaimSet } from "@/hooks/useOverlayData";
 import type { RecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import type { TraderClaimMarker } from "@/hooks/useTraderClaims";
+import type { RapidMarker } from "@/lib/rapids/merge";
 import { isTraderType, type TraderType } from "@/lib/tops-map-view/trader-types";
+import {
+    selectRapidsMarkers,
+    type RapidsClusterLevel,
+    type RapidsViewport,
+} from "@/lib/tops-map-view/rapids-clusters";
 
-interface ViewportBounds {
-    minX: number;
-    maxX: number;
-    minZ: number;
-    maxZ: number;
-}
+type ViewportBounds = RapidsViewport;
 
 export interface BuildLandmarkPointsArgs {
     allLandmarks: WorldPointMarker[] | undefined;
@@ -27,7 +28,10 @@ export interface BuildLandmarkPointsArgs {
     recordedBrokenTLsVisible: boolean;
     recordedFeatures: RecordedMapFeatures | undefined;
     rapidsVisible: boolean;
-    rapidsMarkers: WorldPointMarker[] | undefined;
+    /** Rapids after the predicted/likelihood/claimed filters. */
+    rapidsMarkers: RapidMarker[] | undefined;
+    /** Precomputed cluster levels for `rapidsMarkers`. */
+    rapidsClusterLevels: RapidsClusterLevel[] | null;
     claimList: TraderClaimMarker[] | undefined;
     claimTypeMap: ClaimTypeMap | undefined;
     emptyClaimSet: EmptyClaimSet | undefined;
@@ -55,6 +59,7 @@ export function buildLandmarkPoints({
     recordedFeatures,
     rapidsVisible,
     rapidsMarkers,
+    rapidsClusterLevels,
     claimList,
     claimTypeMap,
     emptyClaimSet,
@@ -228,24 +233,13 @@ export function buildLandmarkPoints({
             for (const m of recordedFeatures.brokenTLs) base.push(m);
         }
     }
-    // Recorded rapids overlay (advanced-only, own toggle). Same viewport
-    // culling as the broken TLs; markers are coloured by claimed state and
-    // carry an X/Y/Z hover tooltip.
+    // Rapids overlay (advanced-only, own toggle): viewport-culled, and
+    // collapsed into count-sized clusters when many are in view (see
+    // rapids-clusters.ts). Markers are coloured by claimed state and carry
+    // an X/Y/Z hover tooltip.
     if (rapidsVisible && rapidsMarkers) {
-        const b = brokenTLViewportBounds;
-        if (b) {
-            const marginX = (b.maxX - b.minX) * 0.25;
-            const marginZ = (b.maxZ - b.minZ) * 0.25;
-            const minX = b.minX - marginX;
-            const maxX = b.maxX + marginX;
-            const minZ = b.minZ - marginZ;
-            const maxZ = b.maxZ + marginZ;
-            for (const m of rapidsMarkers) {
-                if (m.x < minX || m.x > maxX || m.z < minZ || m.z > maxZ) continue;
-                base.push(m);
-            }
-        } else {
-            for (const m of rapidsMarkers) base.push(m);
+        for (const m of selectRapidsMarkers(rapidsMarkers, rapidsClusterLevels, brokenTLViewportBounds)) {
+            base.push(m);
         }
     }
     // Always-on house glyph for the user's saved favorite position. Drawn

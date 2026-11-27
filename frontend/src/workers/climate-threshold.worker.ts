@@ -10,7 +10,7 @@
  * it on the main thread stalls the map ~20 ms on slower devices.
  */
 
-export type ThresholdDecode = "temp" | "unit";
+export type ThresholdDecode = "temp" | "unit" | "height";
 
 /** RGB triple, components 0..255. */
 export type RgbTriple = [number, number, number];
@@ -64,6 +64,8 @@ export interface ThresholdResponse {
 
 function decodeFn(kind: ThresholdDecode): (r: number, g: number) => number {
     if (kind === "temp") return (r, g) => (r * 256 + g) / 200 - 100;
+    // 8-bit greyscale terrain height (elevation overlay): Y = R.
+    if (kind === "height") return (r) => r;
     return (r, g) => (r * 256 + g) / 65535;
 }
 

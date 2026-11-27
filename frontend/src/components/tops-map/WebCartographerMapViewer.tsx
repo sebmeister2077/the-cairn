@@ -43,9 +43,15 @@ import type {
   MapStats,
   RouteOverlay,
   ConnectionSegment,
+  PointTooltip,
+  ProjectedPointMarker,
   WorldLineSegment,
   WorldPointMarker,
 } from "@/components/tops-map-viewer/MapViewer";
+import {
+  PointTooltipCard,
+  type HoveredPointTooltip,
+} from "@/components/tops-map-viewer/PointTooltipCard";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { drawElements } from "@/lib/drawing/render";
 import { translateElement as translateDrawElement } from "@/lib/drawing/elements";
@@ -559,15 +565,7 @@ export function WebCartographerMapViewer({
   // Per-marker hover tooltip (X/Y/Z) for point markers that carry a `tooltip`
   // payload (recorded broken translocators). `left`/`top` are container-
   // relative pixel coordinates of the cursor.
-  const [hoveredPointTooltip, setHoveredPointTooltip] = useState<{
-    left: number;
-    top: number;
-    x: number;
-    y: number;
-    z: number;
-    kind?: string;
-    claimed?: boolean;
-  } | null>(null);
+  const [hoveredPointTooltip, setHoveredPointTooltip] = useState<HoveredPointTooltip | null>(null);
   // Live cursor world position kept in a ref so the per-frame draw can
   // read it without forcing the projectedSegments memo to re-run on every
   // mousemove. Set to `null` whenever the cursor is outside the canvas.
@@ -809,25 +807,9 @@ export function WebCartographerMapViewer({
 
   const projectedPoints = useMemo(() => {
     if (!overlayPoints || overlayPoints.length === 0) {
-      return [] as Array<{
-        x: number;
-        y: number;
-        label?: string;
-        kind?: string;
-        color?: string;
-        tooltip?: { x: number; y: number; z: number };
-        claimed?: boolean;
-      }>;
+      return [] as ProjectedPointMarker[];
     }
-    const out: Array<{
-      x: number;
-      y: number;
-      label?: string;
-      kind?: string;
-      color?: string;
-      tooltip?: { x: number; y: number; z: number };
-      claimed?: boolean;
-    }> = [];
+    const out: ProjectedPointMarker[] = [];
     for (const p of overlayPoints) {
       const s = projectWorld(p.x, p.z);
       if (!Number.isFinite(s.x) || !Number.isFinite(s.y)) continue;
@@ -839,6 +821,9 @@ export function WebCartographerMapViewer({
         color: p.color,
         tooltip: p.tooltip,
         claimed: p.claimed,
+        likelihood: p.likelihood,
+        confirmed: p.confirmed,
+        clusterCount: p.clusterCount,
       });
     }
     return out;
@@ -2265,7 +2250,7 @@ export function WebCartographerMapViewer({
       if (projectedPoints.length > 0) {
         const threshold = 14;
         const thresholdSq = threshold * threshold;
-        let bestTip: { x: number; y: number; z: number } | null = null;
+        let bestTip: PointTooltip | null = null;
         let bestKind: string | undefined;
         let bestClaimed: boolean | undefined;
         let bestDistSq = Infinity;
@@ -2284,11 +2269,9 @@ export function WebCartographerMapViewer({
         setHoveredPointTooltip(
           bestTip
             ? {
+                ...bestTip,
                 left: sx,
                 top: sy,
-                x: bestTip.x,
-                y: bestTip.y,
-                z: bestTip.z,
                 kind: bestKind,
                 claimed: bestClaimed,
               }
@@ -2426,6 +2409,32 @@ export function WebCartographerMapViewer({
         onWorldClick(Math.floor(world.x), Math.floor(world.z));
         return;
       }
+      // Rapids cluster: clicking zooms in on it so it splits apart.
+      {
+        const clusterThreshSq = 16 * 16;
+        let hit: ProjectedPointMarker | null = null;
+        let bestSq = Infinity;
+        for (const p of projectedPoints) {
+          if (p.kind !== "RapidsCluster" || !p.tooltip) continue;
+          const ddx = sx - p.x;
+          const ddy = sy - p.y;
+          const dsq = ddx * ddx + ddy * ddy;
+          if (dsq < clusterThreshSq && dsq < bestSq) {
+            bestSq = dsq;
+            hit = p;
+          }
+        }
+        if (hit?.tooltip) {
+          const nextPpb = Math.min(
+            MAX_PIXELS_PER_BLOCK,
+            Math.max(MIN_PIXELS_PER_BLOCK, pixelsPerBlockRef.current * 2.5),
+          );
+          setCenterWorldX(hit.tooltip.x);
+          setCenterWorldZ(hit.tooltip.z);
+          setPixelsPerBlock(nextPpb);
+          return;
+        }
+      }
       // Trader-claim marking: a click on a claim dot opens the type picker;
       // a click elsewhere dismisses an open picker. Only users who can
       // contribute (or admins) may open the picker at all.
@@ -2462,6 +2471,7 @@ export function WebCartographerMapViewer({
       overlaySegments,
       unprojectScreen,
       claimMarkingEnabled,
+      projectedPoints,
     ],
   );
 
@@ -2708,36 +2718,7 @@ export function WebCartographerMapViewer({
             X: {hoverCoords.x} &nbsp; Z: {hoverCoords.z}
           </div>
         )}
-        {hoveredPointTooltip && (
-          <div
-            className="absolute z-20 rounded bg-black/85 px-2 py-1 text-xs font-mono text-white pointer-events-none whitespace-nowrap shadow-lg"
-            style={{
-              left: hoveredPointTooltip.left + 14,
-              top: hoveredPointTooltip.top + 14,
-            }}
-          >
-            <div
-              className={
-                "text-[10px] font-semibold uppercase tracking-wide " +
-                (hoveredPointTooltip.kind === "Rapids"
-                  ? hoveredPointTooltip.claimed
-                    ? "text-orange-300"
-                    : "text-teal-300"
-                  : "text-red-300")
-              }
-            >
-              {hoveredPointTooltip.kind === "Rapids"
-                ? hoveredPointTooltip.claimed
-                  ? "Rapids · claimed"
-                  : "Rapids · unclaimed"
-                : "Broken TL"}
-            </div>
-            <div>
-              X: {Math.round(hoveredPointTooltip.x)} &nbsp; Y: {Math.round(hoveredPointTooltip.y)}
-              &nbsp; Z: {Math.round(hoveredPointTooltip.z)}
-            </div>
-          </div>
-        )}
+        {hoveredPointTooltip && <PointTooltipCard tip={hoveredPointTooltip} />}
         {claimPopover && (
           <div
             className="absolute z-30 w-56 rounded-md border border-white/15 bg-slate-900/95 p-2 text-xs text-white shadow-xl"

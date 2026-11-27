@@ -17,6 +17,7 @@ import {
     resumeOpenDwell,
     flush,
     type AdvancedLayersState,
+    type LayerSettings,
 } from "@/lib/tops-map-view/mapLayerTelemetry";
 import type { AuctionLayer } from "@/components/tops-map/AuctionHeatmapControl";
 
@@ -26,6 +27,9 @@ export function useMapLayerTelemetry(auctionLayer: AuctionLayer): void {
     const showOceans = useAppSelector((s) => s.mapView.showOceans);
     const showRecordedBrokenTLs = useAppSelector((s) => s.mapView.showRecordedBrokenTLs);
     const showRapids = useAppSelector((s) => s.mapView.showRapids);
+    const rapidsShowPredicted = useAppSelector((s) => s.mapView.rapidsShowPredicted);
+    const rapidsMinLikelihood = useAppSelector((s) => s.mapView.rapidsMinLikelihood);
+    const rapidsShowClaimed = useAppSelector((s) => s.mapView.rapidsShowClaimed);
     const showTraderClaims = useAppSelector((s) => s.mapView.showTraderClaims);
 
     const showPlayerClaims = useAppSelector((s) => s.mapView.showPlayerClaims);
@@ -49,13 +53,26 @@ export function useMapLayerTelemetry(auctionLayer: AuctionLayer): void {
     const stabilityYSlice = useAppSelector((s) => s.mapView.stabilityYSlice);
     const stabilityOpacity = useAppSelector((s) => s.mapView.stabilityOpacity);
 
+    const elevationEnabled = useAppSelector((s) => s.mapView.elevationEnabled);
+    const elevationMode = useAppSelector((s) => s.mapView.elevationMode);
+    const elevationBandMin = useAppSelector((s) => s.mapView.elevationBandMin);
+    const elevationBandMax = useAppSelector((s) => s.mapView.elevationBandMax);
+    const elevationOpacity = useAppSelector((s) => s.mapView.elevationOpacity);
+
     const auctionHeatmapOpacity = useAppSelector((s) => s.mapView.auctionHeatmapOpacity);
 
     const state = useMemo<AdvancedLayersState>(
         () => ({
             oceans: { enabled: showOceans, settings: {} },
             broken_tls: { enabled: showRecordedBrokenTLs, settings: {} },
-            rapids: { enabled: showRapids, settings: {} },
+            rapids: {
+                enabled: showRapids,
+                settings: {
+                    showPredicted: rapidsShowPredicted,
+                    minLikelihood: rapidsMinLikelihood,
+                    showClaimed: rapidsShowClaimed,
+                },
+            },
             trader_claims: { enabled: showTraderClaims, settings: {} },
             player_claims: {
                 enabled: showPlayerClaims,
@@ -85,6 +102,17 @@ export function useMapLayerTelemetry(auctionLayer: AuctionLayer): void {
                 enabled: stabilityEnabled,
                 settings: { ySlice: stabilityYSlice, opacity: stabilityOpacity },
             },
+            elevation: {
+                enabled: elevationEnabled,
+                settings: (elevationMode === "band"
+                    ? {
+                          mode: elevationMode,
+                          bandMin: elevationBandMin,
+                          bandMax: elevationBandMax,
+                          opacity: elevationOpacity,
+                      }
+                    : { mode: elevationMode, opacity: elevationOpacity }) as LayerSettings,
+            },
             auction_heatmap: {
                 enabled: auctionLayer !== "off",
                 settings: { layer: auctionLayer, opacity: auctionHeatmapOpacity },
@@ -94,6 +122,9 @@ export function useMapLayerTelemetry(auctionLayer: AuctionLayer): void {
             showOceans,
             showRecordedBrokenTLs,
             showRapids,
+            rapidsShowPredicted,
+            rapidsMinLikelihood,
+            rapidsShowClaimed,
             showTraderClaims,
             showPlayerClaims,
             playerClaimsMode,
@@ -112,6 +143,11 @@ export function useMapLayerTelemetry(auctionLayer: AuctionLayer): void {
             stabilityEnabled,
             stabilityYSlice,
             stabilityOpacity,
+            elevationEnabled,
+            elevationMode,
+            elevationBandMin,
+            elevationBandMax,
+            elevationOpacity,
             auctionLayer,
             auctionHeatmapOpacity,
         ],

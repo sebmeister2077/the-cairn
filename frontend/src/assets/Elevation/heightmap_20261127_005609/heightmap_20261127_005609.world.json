@@ -1,0 +1,30 @@
+{
+  "originBlockX": 412000,
+  "originBlockZ": 412000,
+  "originRel": {
+    "x": -99997,
+    "z": -100000
+  },
+  "blocksPerPixelX": 50.0,
+  "blocksPerPixelZ": 50.0,
+  "widthPx": 4000,
+  "heightPx": 4000,
+  "imagePngRelative": "heightmap_20261127_005609.webp",
+  "imageRawPngRelative": "heightmap_20261127_005609.h8.png",
+  "rawDecodeFormula": "height = R  (8-bit greyscale; Y of the highest solid terrain block)",
+  "seaLevel": 110,
+  "mapSizeY": 256,
+  "seed": 421943594,
+  "worldSpawn": {
+    "x": 511997,
+    "y": 123,
+    "z": 512000
+  },
+  "stats": {
+    "min": 0,
+    "max": 254
+  },
+  "generatedUtc": "2026-11-26T22:56:28.2712958+00:00",
+  "note": "Terrain shape as produced by the base terrain generator (GenTerra), computed from the seed. Not included: caves opening the surface, beach/shore raising below sea level, lakes, structures. Below seaLevel the surface is water. Each pixel samples the block under its center.",
+  "sourceWidthPx": 6000
+}

@@ -33,7 +33,6 @@ import {
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
-  setShowRapids as setShowRapidsAction,
   setShowTraderClaims as setShowTraderClaimsAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKeepCodes as setRockStrataKeepCodesAction,
@@ -47,7 +46,6 @@ import {
 import { setRoutePlannerOpen, setRouteShowMovementHeatmap } from "@/store/slices/routePlanner";
 import { setSailboatOpen, setSailboatBoatTLEditMode } from "@/store/slices/sailboatRoute";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
-import { useRapidsOverlay } from "@/hooks/useRapidsOverlay";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
 import { formatDuration } from "@/lib/formatting/format-duration";
 import { useTranslation } from "@/lib/i18n";
@@ -66,7 +64,9 @@ import { useTraderColors } from "@/hooks/useTraderColors";
 import { HomePositionControls } from "./HomePositionControls";
 import { ClimateControlsPanel } from "./ClimateControlsPanel";
 import { TemporalStabilityPanel } from "./TemporalStabilityPanel";
+import { ElevationPanel } from "./ElevationPanel";
 import { PlayerClaimsControl } from "./PlayerClaimsControl";
+import { RapidsControl } from "./RapidsControl";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { AuctionHeatmapControl, type AuctionLayer } from "./AuctionHeatmapControl";
 import type { LegendEntry } from "@/lib/rockstrata/types";
@@ -114,6 +114,9 @@ type FullscreenControlsOverlayProps = {
   /** Temporal-stability overlay status pill (loading / error). */
   stabilityStatus: "idle" | "loading" | "ready" | "error";
   stabilityError: string | null;
+  /** Elevation overlay status pill (loading / error). */
+  elevationStatus: "idle" | "loading" | "ready" | "error";
+  elevationError: string | null;
 };
 
 /**
@@ -159,6 +162,8 @@ export function FullscreenControlsOverlay({
   stabilitySliceMeta,
   stabilityStatus,
   stabilityError,
+  elevationStatus,
+  elevationError,
 }: FullscreenControlsOverlayProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -211,11 +216,6 @@ export function FullscreenControlsOverlay({
     (next: boolean) => dispatch(setShowRecordedBrokenTLsAction(next)),
     [dispatch],
   );
-  const showRapids = useAppSelector((s) => s.mapView.showRapids);
-  const setShowRapids = useCallback(
-    (next: boolean) => dispatch(setShowRapidsAction(next)),
-    [dispatch],
-  );
   const showTraderClaims = useAppSelector((s) => s.mapView.showTraderClaims);
   const setShowTraderClaims = useCallback(
     (next: boolean) => dispatch(setShowTraderClaimsAction(next)),
@@ -257,9 +257,6 @@ export function FullscreenControlsOverlay({
     showTraders || (showAdvancedMapOptions && showRecordedBrokenTLs),
   );
   const recordedFeatures = recordedFeaturesQuery.data;
-  // Shares the React Query cache with the page's loader (same query key), so
-  // this only surfaces the count — no extra fetch.
-  const rapidsQuery = useRapidsOverlay(showAdvancedMapOptions && showRapids);
   const traderClaimsQuery = useTraderClaims(showAdvancedMapOptions && showTraderClaims);
   const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
   const traderTypeFilterSet = useMemo(() => new Set<string>(traderTypeFilter), [traderTypeFilter]);
@@ -709,21 +706,7 @@ export function FullscreenControlsOverlay({
                 })}
               </span>
             </div>
-            <div
-              onClick={() => setShowRapids(!showRapids)}
-              className={cn(
-                "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-                !showAdvancedMapOptions && "hidden",
-              )}
-            >
-              <Switch checked={showRapids} aria-label={t("topsMap.showRapidsOverlay")} />
-              <Label className="cursor-pointer">{t("topsMap.showRapids")}</Label>
-              <span className="text-xs text-muted-foreground">
-                {t("topsMap.totalCount", {
-                  count: (rapidsQuery.data?.length ?? 0).toLocaleString(),
-                })}
-              </span>
-            </div>
+            <RapidsControl variant="fullscreen" />
             <div
               onClick={() => setShowTraderClaims(!showTraderClaims)}
               className={cn(
@@ -847,6 +830,11 @@ export function FullscreenControlsOverlay({
                 status={stabilityStatus}
                 error={stabilityError}
               />
+            </div>
+            <div
+              className={cn(!showAdvancedMapOptions && "hidden", !usingWebCartographer && "hidden")}
+            >
+              <ElevationPanel status={elevationStatus} error={elevationError} />
             </div>
           </CollapsibleSection>
         )}

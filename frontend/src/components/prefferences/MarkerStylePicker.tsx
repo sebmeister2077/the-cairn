@@ -303,6 +303,14 @@ export function MarkerStylePicker() {
             />
             {t("account.appearance.rapidsClaimed")}
           </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="inline-block size-2.5 rounded-full opacity-50"
+              style={{ backgroundColor: RAPIDS_UNCLAIMED_COLOR }}
+            />
+            {t("account.appearance.rapidsPossible")}
+          </span>
         </div>
       </div>
 

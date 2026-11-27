@@ -3,12 +3,13 @@ import {
   drawTLEndpoint,
   drawTerminusMarker,
   drawRapidsMarker,
+  drawRapidsCluster,
   drawPointMarker,
   DEFAULT_LANDMARK_COLOR,
   DEFAULT_MISC_COLOR,
 } from "@/lib/tops-map-view/markerStyles";
 import { rgbaFromHex } from "@/lib/color";
-import type { RouteOverlay } from "@/components/tops-map-viewer/MapViewer";
+import type { ProjectedPointMarker, RouteOverlay } from "@/components/tops-map-viewer/MapViewer";
 
 export interface OverlayDrawArgs {
   segments: Array<{
@@ -25,14 +26,7 @@ export interface OverlayDrawArgs {
      *  color (and a derived translucent glow) instead. */
     color?: string;
   }>;
-  points: Array<{
-    x: number;
-    y: number;
-    label?: string;
-    kind?: string;
-    color?: string;
-    claimed?: boolean;
-  }>;
+  points: ProjectedPointMarker[];
   route: {
     tlSegs: Array<{ x1: number; y1: number; x2: number; y2: number }>;
     walkLegs: Array<{
@@ -253,7 +247,8 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
         p.kind === "Home" ||
         p.kind === "Terminus" ||
         p.kind === "BrokenTL" ||
-        p.kind === "Rapids"
+        p.kind === "Rapids" ||
+        p.kind === "RapidsCluster"
       )
         continue;
       const isMisc = p.kind === "Misc";
@@ -358,8 +353,22 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
     }
 
     // Rapids source markers — user-selected glyph, coloured + haloed by
-    // claimed state (see useRapidsOverlay + drawRapidsMarker).
+    // claimed state, faded by likelihood, badged when confirmed (see
+    // useRapidsOverlay + drawRapidsMarker). Zoomed out, neighbours are
+    // collapsed into count-sized clusters (see rapids-clusters.ts).
     for (const p of points) {
+      if (p.kind === "RapidsCluster") {
+        drawRapidsCluster(
+          ctx,
+          p.x,
+          p.y,
+          1,
+          p.clusterCount ?? 0,
+          p.color ?? "rgba(45, 212, 191, 0.95)",
+          p.confirmed,
+        );
+        continue;
+      }
       if (p.kind !== "Rapids") continue;
       drawRapidsMarker(
         ctx,
@@ -369,6 +378,8 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
         rapidsStyle as never,
         p.color ?? "rgba(45, 212, 191, 0.95)",
         p.claimed,
+        p.likelihood,
+        p.confirmed,
       );
     }
   }

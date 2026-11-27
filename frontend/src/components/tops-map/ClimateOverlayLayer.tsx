@@ -9,6 +9,9 @@ interface ClimateOverlayLayerProps {
   imageHeight: number;
   zIndex?: number;
   opacity?: number;
+  /** `"pixelated"` (default) keeps raster cells crisp; `"auto"` smooths
+   *  continuous imagery such as the elevation relief. */
+  imageRendering?: "pixelated" | "auto";
 }
 
 /**
@@ -25,6 +28,7 @@ export function ClimateOverlayLayer({
   imageHeight,
   zIndex = 10,
   opacity = 0.7,
+  imageRendering = "pixelated",
 }: ClimateOverlayLayerProps) {
   if (!bounds || !overlayUrl || !stats) return null;
   if (imageWidth <= 0 || imageHeight <= 0) return null;
@@ -53,7 +57,7 @@ export function ClimateOverlayLayer({
           width,
           height,
           maxWidth: "none",
-          imageRendering: "pixelated",
+          imageRendering,
           pointerEvents: "none",
         }}
       />

@@ -9,12 +9,17 @@ import {
   drawTLEndpoint,
   drawTerminusMarker,
   drawRapidsMarker,
+  drawRapidsCluster,
   drawPointMarker,
   DEFAULT_LANDMARK_COLOR,
   DEFAULT_MISC_COLOR,
 } from "@/lib/tops-map-view/markerStyles";
 import { useTranslation } from "@/lib/i18n";
 import { rgbaFromHex } from "@/lib/color";
+import {
+  PointTooltipCard,
+  type HoveredPointTooltip,
+} from "@/components/tops-map-viewer/PointTooltipCard";
 
 // Marker icon styles are user-selectable from the Account → Appearance panel
 // and live on the `mapView` redux slice (persisted via the root envelope).
@@ -106,6 +111,18 @@ export interface ConnectionSegment {
   to: { x: number; z: number };
 }
 
+/** Hover payload for point markers. `title` overrides the kind-derived
+ *  heading, `detail` adds a second line and `hideCoords` drops the X/Y/Z
+ *  line (used by rapids clusters, which have no single coordinate). */
+export interface PointTooltip {
+  x: number;
+  y: number;
+  z: number;
+  title?: string;
+  detail?: string;
+  hideCoords?: boolean;
+}
+
 export interface WorldPointMarker {
   x: number;
   z: number;
@@ -118,23 +135,55 @@ export interface WorldPointMarker {
    *  `"Rapids"` is drawn as a distinct water glyph coloured by claimed state;
    *  other kinds use the built-in landmark palette (cyan dot for Base/Misc,
    *  gold star for Server). */
-  kind?: "Base" | "Server" | "Misc" | "Trader" | "Home" | "Terminus" | "BrokenTL" | "Rapids";
+  kind?:
+    | "Base"
+    | "Server"
+    | "Misc"
+    | "Trader"
+    | "Home"
+    | "Terminus"
+    | "BrokenTL"
+    | "Rapids"
+    | "RapidsCluster";
   /** Optional fill color for `"Trader"` markers. Hex string (e.g. "#16a34a"). */
   color?: string;
   /** Optional per-marker hover tooltip. When present, hovering the marker
    *  shows an X/Y/Z readout at the cursor. Used by `"BrokenTL"` and
    *  `"Rapids"` markers to surface the recorded coordinate (relative X/Z,
    *  absolute Y). */
-  tooltip?: { x: number; y: number; z: number };
+  tooltip?: PointTooltip;
   /** Claimed state for `"Rapids"` markers — drives the marker colour + halo
-   *  and the hover-tooltip label. */
+   *  and the hover-tooltip label. For `"RapidsCluster"`, true when every
+   *  member is claimed. */
   claimed?: boolean;
+  /** `"Rapids"`: 0..1 existence likelihood; < 1 draws the glyph faded. */
+  likelihood?: number;
+  /** `"Rapids"`: seen in-game AND predicted (drawn with a badge).
+   *  `"RapidsCluster"`: at least one member is confirmed. */
+  confirmed?: boolean;
+  /** `"RapidsCluster"`: number of rapids collapsed into this marker. */
+  clusterCount?: number;
   /** `"user"` when this landmark was contributed by a player (backend
    *  stamps `origin: "user"` on the feature's properties), otherwise
    *  undefined for seed / official data. Used to distinguish
    *  player-added bases from WebCartographer-exported ones so we can
    *  merge without duplicates. */
   origin?: "user";
+}
+
+/** A {@link WorldPointMarker} projected to screen/image space, keeping the
+ *  fields the draw + hover passes need. */
+export interface ProjectedPointMarker {
+  x: number;
+  y: number;
+  label?: string;
+  kind?: string;
+  color?: string;
+  tooltip?: PointTooltip;
+  claimed?: boolean;
+  likelihood?: number;
+  confirmed?: boolean;
+  clusterCount?: number;
 }
 export type LandmarkProperty = {
   label: string;
@@ -428,15 +477,7 @@ export function MapViewer({
   // Per-marker hover tooltip (X/Y/Z readout) for point markers that carry a
   // `tooltip` payload (e.g. recorded broken translocators). `left`/`top` are
   // container-relative pixel coordinates of the cursor.
-  const [hoveredPointTooltip, setHoveredPointTooltip] = useState<{
-    left: number;
-    top: number;
-    x: number;
-    y: number;
-    z: number;
-    kind?: string;
-    claimed?: boolean;
-  } | null>(null);
+  const [hoveredPointTooltip, setHoveredPointTooltip] = useState<HoveredPointTooltip | null>(null);
   // Natural pixel size of the blob-mode `<img>`. In tile mode we derive
   // dimensions from the tileSet directly (see `imgNatural` below).
   const [blobImgNatural, setBlobImgNatural] = useState({ w: 0, h: 0 });
@@ -734,29 +775,13 @@ export function MapViewer({
       imgNatural.w <= 0 ||
       imgNatural.h <= 0
     ) {
-      return [] as Array<{
-        x: number;
-        y: number;
-        label?: string;
-        kind?: string;
-        color?: string;
-        tooltip?: { x: number; y: number; z: number };
-        claimed?: boolean;
-      }>;
+      return [] as ProjectedPointMarker[];
     }
 
     const toImgX = (x: number) => ((x - stats.start_x) / stats.width_blocks) * imgNatural.w;
     const toImgY = (z: number) => ((z - stats.start_z) / stats.height_blocks) * imgNatural.h;
 
-    const projected: Array<{
-      x: number;
-      y: number;
-      label?: string;
-      kind?: string;
-      color?: string;
-      tooltip?: { x: number; y: number; z: number };
-      claimed?: boolean;
-    }> = [];
+    const projected: ProjectedPointMarker[] = [];
     for (const pt of overlayPoints) {
       const x = toImgX(pt.x);
       const y = toImgY(pt.z);
@@ -769,6 +794,9 @@ export function MapViewer({
         color: pt.color,
         tooltip: pt.tooltip,
         claimed: pt.claimed,
+        likelihood: pt.likelihood,
+        confirmed: pt.confirmed,
+        clusterCount: pt.clusterCount,
       });
     }
 
@@ -1234,7 +1262,8 @@ export function MapViewer({
           pt.kind === "Home" ||
           pt.kind === "Terminus" ||
           pt.kind === "BrokenTL" ||
-          pt.kind === "Rapids"
+          pt.kind === "Rapids" ||
+          pt.kind === "RapidsCluster"
         )
           continue;
         const isMisc = pt.kind === "Misc";
@@ -1352,10 +1381,23 @@ export function MapViewer({
         ctx.stroke();
       }
 
-      // Rapids markers (recorded session exports) — drawn with the user's
-      // selected rapids glyph; `pt.color` + `pt.claimed` encode ownership
-      // (orange/haloed = claimed, teal = free).
+      // Rapids markers — drawn with the user's selected rapids glyph;
+      // `pt.color` + `pt.claimed` encode ownership (orange/haloed = claimed,
+      // teal = free), likelihood < 1 fades the glyph and confirmed rapids
+      // get a badge. Zoomed out, neighbours collapse into sized clusters.
       for (const pt of projectedOverlayPoints) {
+        if (pt.kind === "RapidsCluster") {
+          drawRapidsCluster(
+            ctx,
+            pt.x,
+            pt.y,
+            zoom,
+            pt.clusterCount ?? 0,
+            pt.color ?? "rgba(45, 212, 191, 0.95)",
+            pt.confirmed,
+          );
+          continue;
+        }
         if (pt.kind !== "Rapids") continue;
         drawRapidsMarker(
           ctx,
@@ -1365,6 +1407,8 @@ export function MapViewer({
           rapidsStyle,
           pt.color ?? "rgba(45, 212, 191, 0.95)",
           pt.claimed,
+          pt.likelihood,
+          pt.confirmed,
         );
       }
     }
@@ -1993,7 +2037,7 @@ export function MapViewer({
         if (projectedOverlayPoints.length > 0) {
           const pxThreshold = 14 / Math.max(zoomRef.current, 0.1);
           const pxThresholdSq = pxThreshold * pxThreshold;
-          let bestTip: { x: number; y: number; z: number } | null = null;
+          let bestTip: PointTooltip | null = null;
           let bestKind: string | undefined;
           let bestClaimed: boolean | undefined;
           let bestDistSq = Infinity;
@@ -2011,11 +2055,9 @@ export function MapViewer({
           }
           if (bestTip) {
             setHoveredPointTooltip({
+              ...bestTip,
               left: e.clientX - rect.left,
               top: e.clientY - rect.top,
-              x: bestTip.x,
-              y: bestTip.y,
-              z: bestTip.z,
               kind: bestKind,
               claimed: bestClaimed,
             });
@@ -2309,36 +2351,7 @@ export function MapViewer({
             X: {hoverCoords.x} &nbsp; Z: {hoverCoords.z}
           </div>
         )}
-        {hoveredPointTooltip && (
-          <div
-            className="absolute z-20 rounded bg-black/85 px-2 py-1 text-xs font-mono text-white pointer-events-none whitespace-nowrap shadow-lg"
-            style={{
-              left: hoveredPointTooltip.left + 14,
-              top: hoveredPointTooltip.top + 14,
-            }}
-          >
-            <div
-              className={
-                "text-[10px] font-semibold uppercase tracking-wide " +
-                (hoveredPointTooltip.kind === "Rapids"
-                  ? hoveredPointTooltip.claimed
-                    ? "text-orange-300"
-                    : "text-teal-300"
-                  : "text-red-300")
-              }
-            >
-              {hoveredPointTooltip.kind === "Rapids"
-                ? hoveredPointTooltip.claimed
-                  ? "Rapids · claimed"
-                  : "Rapids · unclaimed"
-                : "Broken TL"}
-            </div>
-            <div>
-              X: {Math.round(hoveredPointTooltip.x)} &nbsp; Y: {Math.round(hoveredPointTooltip.y)}
-              &nbsp; Z: {Math.round(hoveredPointTooltip.z)}
-            </div>
-          </div>
-        )}
+        {hoveredPointTooltip && <PointTooltipCard tip={hoveredPointTooltip} />}
       </div>
     </div>
   );
