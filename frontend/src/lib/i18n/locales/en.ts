@@ -1573,6 +1573,8 @@ export const en = {
         playerClaimsMatchCount: "{count} matching claims",
         playerClaimsAllHint: "Hover a claim to see its owner",
         playerClaimsOpacity: "Opacity",
+        playerClaimsInfo:
+          "Land claimed by players to protect their builds from others. A claim can be made of several cuboids; the outline drawn on the map is its bounding area (the min–max extent of all its cuboids), so it may cover some unclaimed ground.",
         claimMarkTitle: "Mark trader type",
         claimMarkClose: "Close",
         claimCurrentType: "Current",

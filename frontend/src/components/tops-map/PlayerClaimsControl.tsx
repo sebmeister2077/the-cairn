@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Info, Search } from "lucide-react";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { Slider } from "../ui/slider";
 import { Combobox } from "../ui/combobox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   setShowPlayerClaims as setShowPlayerClaimsAction,
@@ -102,6 +103,18 @@ export function PlayerClaimsControl({ variant = "card" }: PlayerClaimsControlPro
             count: (playerClaimsQuery.data?.length ?? 0).toLocaleString(),
           })}
         </span>
+        {playerClaimsMode !== "density" && (
+          <Tooltip>
+            <TooltipTrigger
+              onClick={(ev) => ev.stopPropagation()}
+              aria-label={t("topsMap.playerClaimsInfo")}
+              className="ml-auto inline-flex cursor-help rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Info className="size-3.5" aria-hidden />
+            </TooltipTrigger>
+            <TooltipContent>{t("topsMap.playerClaimsInfo")}</TooltipContent>
+          </Tooltip>
+        )}
       </div>
       <div
         className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
@@ -124,7 +137,7 @@ export function PlayerClaimsControl({ variant = "card" }: PlayerClaimsControlPro
                 type="button"
                 onClick={() => setPlayerClaimsMode("density")}
                 className={cn(
-                  "flex-1 rounded px-2 py-1 text-xs transition-colors",
+                  "flex-1 rounded px-2 py-1 text-xs transition-colors cursor-pointer",
                   playerClaimsMode === "density"
                     ? "bg-foreground text-background"
                     : "hover:bg-muted",
@@ -136,7 +149,7 @@ export function PlayerClaimsControl({ variant = "card" }: PlayerClaimsControlPro
                 type="button"
                 onClick={() => setPlayerClaimsMode("search")}
                 className={cn(
-                  "flex-1 rounded px-2 py-1 text-xs transition-colors",
+                  "flex-1 rounded px-2 py-1 text-xs transition-colors cursor-pointer",
                   playerClaimsMode === "search"
                     ? "bg-foreground text-background"
                     : "hover:bg-muted",
@@ -148,7 +161,7 @@ export function PlayerClaimsControl({ variant = "card" }: PlayerClaimsControlPro
                 type="button"
                 onClick={() => setPlayerClaimsMode("all")}
                 className={cn(
-                  "flex-1 rounded px-2 py-1 text-xs transition-colors",
+                  "flex-1 rounded px-2 py-1 text-xs transition-colors cursor-pointer",
                   playerClaimsMode === "all" ? "bg-foreground text-background" : "hover:bg-muted",
                 )}
               >
