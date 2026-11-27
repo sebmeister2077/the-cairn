@@ -88,6 +88,12 @@ export function usePlayerClaims(enabled: boolean): UseQueryResult<PlayerClaim[]>
             const features = await loadMapFeatures<RawPlayerClaim>("playerclaims", signal);
             return parsePlayerClaims(features);
         },
+        select(data) {
+            return data.map(claim => ({
+                ...claim,
+                owner: claim.owner.replace("Player ", "")
+            }));
+        },
     });
 }
 
